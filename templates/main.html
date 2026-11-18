@@ -1,0 +1,3618 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>NPI 工程文件管理系统</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f0f2f5;--card:#fff;--border:#e2e5ea;--input-bg:#f8f9fb;
+  --t1:#1a1a1a;--t2:#555;--t3:#999;
+  --accent:#2196f3;--accent2:#1976d2;--accentL:rgba(33,150,243,0.08);
+  --danger:#dc2626;--green:#22c55e;--red:#ef4444;--gray:#888;--ok:#16a34a;--warn:#ea580c;
+  --hover:#f5f7fa;
+  --radius:8px;--radius-sm:6px;--radius-lg:12px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.06);--shadow:0 4px 16px rgba(0,0,0,.08);--shadow-pop:0 12px 40px rgba(0,0,0,.18);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;
+     background:var(--bg);color:var(--t1);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+#appLoading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+            background:var(--bg);z-index:9999;transition:opacity .2s}
+#appLoading .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);
+                     border-radius:50%;animation:spin 1s linear infinite}
+#appLoading .txt{margin-left:12px;color:var(--t2);font-size:14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.header{display:flex;align-items:center;padding:0 16px;height:48px;
+        background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;gap:12px}
+.header .logo{font-weight:800;font-size:18px;color:var(--accent);letter-spacing:1px}
+.header .title{font-size:14px;font-weight:600;color:var(--t1)}
+.header .spacer{flex:1}
+.header .user-info{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--t2);margin-right:4px}
+.header .role-badge{padding:1px 5px;border-radius:var(--radius-sm);font-size:10px;font-weight:700;letter-spacing:.5px}
+.header .role-badge.sa{background:rgba(220,38,38,0.1);color:var(--danger)}
+.header .role-badge.pa{background:rgba(234,88,12,0.1);color:var(--warn)}
+.header .role-badge.pd{background:rgba(33,150,243,0.1);color:var(--accent)}
+.hdr-btn{background:none;border:1px solid var(--border);color:var(--t2);padding:4px 10px;
+         border-radius:var(--radius-sm);cursor:pointer;font-size:12px;transition:.15s}
+.hdr-btn:hover{border-color:var(--accent);color:var(--accent)}
+.hdr-nav{display:flex;align-items:center;gap:8px;margin-left:24px}
+.hdr-nav .nav-group{display:flex;align-items:center;gap:2px;background:var(--input-bg);
+                    border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px}
+.hdr-nav button{background:none;border:none;color:var(--t2);padding:5px 11px;
+                border-radius:var(--radius-sm);font-size:12px;cursor:pointer;transition:.15s;white-space:nowrap}
+.hdr-nav button:hover{color:var(--accent);background:rgba(33,150,243,.08)}
+.hdr-nav button.active{background:var(--accent);color:#fff}
+.hdr-dropdown{position:relative}
+.hdr-menu{position:absolute;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:0 10px 28px rgba(0,0,0,.14);min-width:190px;padding:0;z-index:2000;overflow:hidden}
+.hdr-menu-user{padding:12px 16px;background:var(--input-bg);border-bottom:1px solid var(--border)}
+.hdr-menu-user .u-name{font-size:14px;font-weight:600;color:var(--t1)}
+.hdr-menu-user .u-role{font-size:11px;color:var(--t3);margin-top:3px}
+.hdr-menu-group-title{padding:8px 16px 2px;font-size:11px;color:var(--t3);font-weight:600;letter-spacing:.5px}
+.hdr-menu button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;padding:8px 16px;font-size:13px;color:var(--t2);cursor:pointer;white-space:nowrap}
+.hdr-menu button .ic{width:18px;text-align:center;color:var(--t3);font-size:14px}
+.hdr-menu button:hover{background:rgba(33,150,243,.08);color:var(--accent)}
+.hdr-menu button:hover .ic{color:var(--accent)}
+.hdr-menu .sep{height:1px;background:var(--border);margin:6px 0}
+.hdr-menu.hidden{display:none}
+.layout{display:flex;flex:1;overflow:hidden}
+.sidebar{width:280px;min-width:200px;max-width:500px;background:var(--card);border-right:1px solid var(--border);
+         display:flex;flex-direction:column;overflow:hidden;position:relative}
+.sb-resizer{width:6px;cursor:col-resize;background:transparent;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:background .15s;z-index:5}
+.sb-resizer::after{content:'';display:block;width:2px;height:28px;border-radius:2px;background:var(--border);transition:background .15s}
+.sb-resizer:hover,.sb-resizer.dragging{background:rgba(33,150,243,.08)}
+.sb-resizer:hover::after,.sb-resizer.dragging::after{background:var(--accent)}
+.sb-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px;
+           font-size:13px;font-weight:600;color:var(--t2)}
+.sb-btn{background:none;border:1px solid var(--border);color:var(--t2);padding:3px 8px;
+        border-radius:var(--radius-sm);cursor:pointer;font-size:11px;transition:.15s}
+.sb-btn:hover{border-color:var(--accent);color:var(--accent)}
+.sb-actions{display:flex;gap:4px;padding:6px 14px}
+.sb-act-btn{flex:1;padding:5px 0;background:var(--input-bg);border:1px solid var(--border);
+            border-radius:var(--radius-sm);color:var(--t2);font-size:11px;cursor:pointer;transition:.15s;text-align:center}
+.sb-act-btn:hover{border-color:var(--accent);color:var(--accent)}
+.sb-act-btn.danger{color:var(--danger);border-color:rgba(220,38,38,0.25)}
+.sb-act-btn.danger:hover{background:rgba(220,38,38,0.06);border-color:var(--danger)}
+.sb-search{padding:0 14px 6px}
+.sb-search input{width:100%;padding:6px 10px;background:var(--input-bg);border:1px solid var(--border);
+                 border-radius:var(--radius-sm);color:var(--t1);font-size:12px;outline:none}
+.tree-wrap{flex:1;overflow-y:auto;overflow-x:hidden;padding:4px 0}
+.tn{display:flex;align-items:center;cursor:pointer;padding:3px 8px 3px 6px;
+    gap:4px;font-size:12.5px;color:var(--t2);transition:.1s;user-select:none;min-height:28px}
+.tn:hover{background:var(--hover)}
+.tn.selected{background:var(--accentL);color:var(--accent)}
+.tn .icon{font-size:13px;flex-shrink:0;width:16px;text-align:center}
+.tn .label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tn .count{font-size:10px;color:var(--t3);background:rgba(33,150,243,0.08);
+           padding:1px 6px;border-radius:var(--radius-lg);flex-shrink:0}
+.tn .status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.tn .status-dot.green{background:var(--green);box-shadow:0 0 4px rgba(34,197,94,.5)}
+.tn .status-dot.gray{background:var(--gray)}
+.tn .status-dot.red{background:var(--red);opacity:.35}
+.tn .status-dot.orange{background:var(--warn);opacity:.9}
+.tn-toggle{width:14px;text-align:center;color:var(--t3);font-size:9px;cursor:pointer;flex-shrink:0}
+.tn-lock{font-size:12px;color:#7f5555;flex-shrink:0}
+.tn.lv0{padding-left:8px;font-weight:600}
+.tn.lv1{padding-left:24px}
+.tn.lv2{padding-left:40px}
+.tn.lv3{padding-left:56px}
+.legend{padding:6px 14px;border-top:1px solid var(--border);display:flex;gap:14px;font-size:10px;color:var(--t3);flex-wrap:wrap}
+.legend .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px;vertical-align:middle}
+.legend .dot.green{background:var(--green);box-shadow:0 0 3px rgba(34,197,94,.5)}
+.legend .dot.red{background:var(--red);opacity:.35}
+.legend .dot.gray{background:var(--gray)}
+.legend .dot.orange{background:var(--warn);opacity:.9}
+.ctx-menu{position:fixed;z-index:10000;min-width:170px;background:var(--card);
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  box-shadow:0 8px 28px rgba(0,0,0,.25);padding:5px;display:none;font-size:13px}
+.ctx-menu.show{display:block}
+.ctx-item{padding:7px 12px;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--t1)}
+.ctx-item:hover{background:var(--accent);color:#fff}
+.ctx-item.danger{color:var(--red)}
+.ctx-item.danger:hover{background:var(--red);color:#fff}
+.ctx-sep{height:1px;background:var(--border);margin:4px 0}
+.overview-wrap{padding:0;display:flex;flex-direction:column;height:100%;overflow:hidden}
+.overview-title{flex-shrink:0;font-size:16px;font-weight:600;color:var(--t1);padding:14px 16px;border-bottom:1px solid var(--border);background:var(--card);display:flex;align-items:center;gap:8px}
+.overview-empty{padding:40px;text-align:center;color:var(--t3);border:1px dashed var(--border);border-radius:var(--radius);background:var(--card)}
+.overview-empty .ico{font-size:38px;opacity:.4;margin-bottom:8px}
+.overview-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px;align-items:stretch;height:100%;padding:14px 16px;overflow:hidden}
+.overview-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 2px 8px rgba(0,0,0,.06);min-width:0}
+.overview-card .head{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--t1);justify-content:space-between}.overview-card .head .head-title{display:flex;align-items:center;gap:8px;min-width:0;flex:1}.overview-card .head .head-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}.overview-card .head .head-actions .btn{white-space:nowrap}
+.overview-card .head .name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.overview-card .preview{flex:1;display:flex;align-items:center;justify-content:center;background:#fafbfd;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;overflow:hidden;text-align:left;min-height:0}
+.overview-card .preview img{width:100%;height:100%;object-fit:contain;display:block}
+.overview-card .preview table{border-collapse:collapse;width:100%;font-size:12px;color:var(--t1);table-layout:fixed}
+.overview-card .preview th,.overview-card .preview td{border:1px solid var(--border);padding:5px 10px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.overview-card .preview th{background:#f3f5fa;position:sticky;top:0}
+.overview-card .meta{font-size:11px;color:var(--t3);flex-shrink:0}
+.overview-card .actions{display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0}
+.sheet-tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.sheet-tabs .tab{padding:3px 9px;border-radius:10px;border:1px solid var(--border);font-size:11px;color:var(--t2);background:#fff;cursor:pointer}
+.sheet-tabs .tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+/* 零件概览：左侧概览图 + 右侧零件信息卡 */
+.ov-split{display:flex;gap:16px;align-items:stretch;flex:1;min-height:0}
+.ov-left{flex:1 1 50%;min-width:0;display:flex;flex-direction:column;height:100%}
+.ov-right{flex:1 1 50%;min-width:0;display:flex;flex-direction:column;height:100%}
+.ov-left #overviewContainer{height:100%;display:flex;flex-direction:column;min-height:0}
+.ov-left .overview-grid{display:flex;flex-direction:column;padding:0;height:100%;min-height:0}
+.ov-left .overview-card{height:100%;min-height:0}
+.ov-left .admin-empty{min-height:120px;padding:40px 20px}
+#partInfoPanel{height:100%;display:flex;flex-direction:column}
+@media(max-width:1180px){ .ov-split{flex-direction:column} .ov-left{flex:1 1 auto;max-width:100%;height:auto} .ov-right{width:100%;height:auto} }
+/* 零件 3D 图：详情页左侧内联渲染（替代原概览图） */
+.p3d-wrap{display:flex;flex-direction:column;height:100%;min-height:0}
+.p3d-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0;padding-bottom:8px}
+.p3d-bar .spacer{flex:1}
+.p3d-viewer{flex:1 1 auto;min-height:0;position:relative;background:linear-gradient(180deg,#f7f9fc,#eef1f6);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+.p3d-viewer canvas{display:block;width:100%;height:100%}
+.p3d-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--t3);font-size:13px;text-align:center;padding:20px}
+.p3d-empty .ico{font-size:40px;opacity:.4}
+.p3d-meta{font-size:11px;color:var(--t2);background:#fafbfc;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;margin-top:8px;line-height:1.6;flex-shrink:0;max-height:84px;overflow:auto}
+.p3d-meta b{color:var(--t1);font-weight:600}
+.p3d-sel{font-size:12px;height:28px;padding:0 8px;max-width:260px}
+/* ---------- 零件 3D 图 ---------- */
+/* .modal.m3d-modal 双类提升优先级，覆盖基础 .modal 的 560px 宽（基础定义在本文件更后处） */
+.modal.m3d-modal{width:1180px;max-width:96vw;height:88vh;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+.modal.m3d-modal .modal-head,.modal.m3d-modal .modal-foot{flex-shrink:0}
+.modal.m3d-modal .modal-body{flex:1 1 auto;min-height:0;overflow:hidden}
+.m3d-body{display:flex;gap:14px;padding:14px;height:100%;min-height:0;overflow:hidden}
+.m3d-left{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:8px}
+.m3d-right{flex:0 0 300px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.m3d-viewer{flex:1 1 auto;min-height:0;position:relative;background:linear-gradient(180deg,#f7f9fc,#eef1f6);
+  border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.m3d-viewer canvas{display:block;width:100%;height:100%}
+.m3d-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:13px;text-align:center;padding:20px}
+.m3d-viewer-bar{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.m3d-stat{font-size:11px;color:var(--t3)}
+.m3d-meta{font-size:11px;color:var(--t2);background:#fafbfc;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;line-height:1.7;flex-shrink:0;max-height:120px;overflow:auto}
+.m3d-meta b{color:var(--t1);font-weight:600}
+.m3d-toolbar{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.m3d-cli{font-size:11px;color:var(--t3)}
+.m3d-cli.ok{color:var(--success,#18a058)}
+.m3d-cli.err{color:var(--red)}
+.m3d-list{flex:1 1 auto;overflow-y:auto;display:flex;flex-direction:column;gap:6px;min-height:0}
+.m3d-loading,.m3d-none{color:var(--t3);font-size:12px;padding:16px;text-align:center}
+.m3d-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;cursor:pointer}
+.m3d-item:hover{border-color:var(--accent)}
+.m3d-item.active{border-color:var(--accent);background:#f0f6ff}
+.m3d-item .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--t1)}
+.m3d-item .sub{font-size:10px;color:var(--t3);flex-shrink:0}
+.m3d-tag{font-size:10px;padding:1px 6px;border-radius:8px;flex-shrink:0}
+.m3d-tag.ready{background:#e7f5ec;color:#18a058}
+.m3d-tag.failed{background:#fdecec;color:var(--red)}
+.m3d-tag.pending{background:#f0f1f3;color:var(--t3)}
+@media(max-width:1000px){ .m3d-body{flex-direction:column} .m3d-right{flex:1 1 auto;width:100%} }
+.pi-card{flex:1;display:flex;flex-direction:column;min-height:0;max-height:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.pi-head{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:var(--t1);display:flex;align-items:center;justify-content:space-between;background:#fafbfc;gap:8px;flex-shrink:0}
+.pi-head-actions{display:flex;align-items:center;gap:8px}
+.pi-readonly{font-size:11px;color:var(--t3);background:#f0f1f3;padding:3px 8px;border-radius:10px}
+.pi-body{flex:1;overflow-x:hidden;overflow-y:auto;padding:14px;position:relative;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.pi-body::-webkit-scrollbar{width:8px}
+.pi-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.pi-body::-webkit-scrollbar-thumb:hover{background:var(--t3)}
+.pi-body::-webkit-scrollbar-track{background:transparent}
+.pi-label{font-size:12px;color:var(--t2);font-weight:600;margin-bottom:8px}
+.pi-rev{margin-bottom:14px;padding-bottom:14px;border-bottom:1px dashed var(--border)}
+.pi-rev-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.pi-rev-cell{display:flex;flex-direction:column;gap:4px;min-width:0}
+.pi-rev-no{font-size:10px;color:var(--t3);text-align:center;font-weight:600;letter-spacing:.5px}
+.pi-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.pi-row:last-child{margin-bottom:0}
+.pi-row>label{width:110px;flex-shrink:0;font-size:12px;color:var(--t2);font-weight:600;word-break:break-word;padding-top:6px}
+.pi-input{width:100%;min-width:0;box-sizing:border-box;padding:6px 8px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;color:var(--t1);outline:none;transition:.15s;resize:vertical;font-family:inherit;line-height:1.4}
+.pi-input:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px var(--accentL)}
+textarea.pi-input{min-height:42px;max-height:200px}
+.pi-val{width:100%;box-sizing:border-box;padding:6px 8px;font-size:12px;color:var(--t1);background:#f8f9fb;border-radius:var(--radius-sm);min-height:29px;word-break:break-all}
+.pi-foot{padding:9px 14px;border-top:1px solid var(--border);font-size:11px;color:var(--t3);background:#fafbfc;flex-shrink:0}
+/* 零件信息溢出提示：上/下渐变蒙层 + 箭头（不溢出时不显示） */
+.pi-body::before,.pi-body::after{content:'';position:absolute;left:0;right:0;height:24px;pointer-events:none;opacity:0;transition:opacity .2s;z-index:3;background-repeat:no-repeat;background-position:center}
+.pi-body::before{top:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M4 10l4-4 4 4' fill='none' stroke='%2366707f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),linear-gradient(to bottom,rgba(255,255,255,.85),rgba(255,255,255,0))}
+.pi-body::after{bottom:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%2366707f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),linear-gradient(to top,rgba(255,255,255,.85),rgba(255,255,255,0))}
+.pi-body.pi-not-top::before{opacity:1}
+.pi-body.pi-not-bottom::after{opacity:1}
+.pi-field-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.pi-field-row .pi-input{flex:1}
+.pi-field-row .sort{width:60px;text-align:center}
+.pi-field-key{font-size:11px;color:var(--t3);background:#f0f1f3;padding:5px 8px;border-radius:var(--radius-sm);font-family:monospace}
+.pi-field-del{color:var(--danger);cursor:pointer;font-size:13px;padding:4px}
+.pi-field-add{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.toolbar{display:flex;align-items:center;padding:10px 16px;gap:10px;
+         border-bottom:1px solid var(--border);background:var(--card);flex-shrink:0;flex-wrap:wrap}
+.crumb-group{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.crumb-item{font-size:13px;color:var(--accent);cursor:pointer;padding:2px 4px;border-radius:var(--radius-sm)}
+.crumb-item:hover{background:var(--accentL)}
+.crumb-sep{color:var(--t3);font-size:11px}
+.crumb-current{font-size:14px;font-weight:600;color:var(--t1)}
+.file-count{font-size:11px;color:var(--t3);background:rgba(33,150,243,0.06);padding:3px 8px;border-radius:var(--radius-lg)}
+.toolbar .spacer{flex:1}
+.toolbar input[type=text]{background:var(--input-bg);border:1px solid var(--border);
+                           border-radius:var(--radius-sm);padding:6px 12px;color:var(--t1);font-size:13px;width:200px;outline:none}
+.toolbar input:focus{border-color:var(--accent)}
+.toolbar select{background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);
+                padding:6px 10px;color:var(--t1);font-size:13px;outline:none}
+.upload-btn{background:var(--accent);color:#fff;border:none;padding:7px 14px;border-radius:var(--radius-sm);
+            font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+.upload-btn:hover{background:var(--accent2)}
+.upload-btn:disabled{opacity:.4;cursor:not-allowed}
+.sec-banner{padding:6px 16px;background:rgba(34,197,94,0.06);border-bottom:1px solid rgba(34,197,94,0.1);
+            font-size:11px;color:var(--ok);flex-shrink:0}
+.tbl-wrap{flex:1;overflow:auto;padding:0 10px 10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead{position:sticky;top:0;z-index:1}
+th{background:var(--card);color:var(--t3);font-weight:600;text-align:left;padding:9px 14px;
+   border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+td{padding:9px 14px;border-bottom:1px solid var(--border);color:var(--t2);vertical-align:middle}
+tbody tr{transition:background .12s}
+tbody tr:hover td{background:var(--accentL)}
+tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+tbody tr.selected td{background:var(--accentL);font-weight:500}
+.file-name{color:var(--t1);font-weight:500}
+.file-actions{display:flex;gap:6px;flex-wrap:nowrap;justify-content:flex-start}
+.file-actions .btn{padding:3px 10px;font-size:11px;border-radius:4px;white-space:nowrap}
+/* 文件表格列宽与省略 */
+table.files-tbl{table-layout:fixed}
+table.files-tbl th:nth-child(1){width:32%}
+table.files-tbl th:nth-child(2){width:12%}
+table.files-tbl th:nth-child(3){width:14%}
+table.files-tbl th:nth-child(4){width:12%}
+table.files-tbl th:nth-child(5){width:14%}
+table.files-tbl th:nth-child(6){width:16%}
+table.files-tbl td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0}
+table.files-tbl td:nth-child(6){overflow:visible;text-overflow:clip;white-space:normal;max-width:none}
+/* 项目树折叠 */
+@keyframes treeIn{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:translateX(0)}}
+.tn{animation:treeIn .18s ease}
+.tn-toggle{width:14px;text-align:center;color:var(--t3);font-size:9px;cursor:pointer;flex-shrink:0;transition:transform .15s;display:inline-block}
+.tn.collapsed .tn-toggle{transform:rotate(-90deg)}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:70px 20px;text-align:center;color:var(--t3);font-size:14px}
+.empty::before{content:'📭';font-size:38px;opacity:.45}
+.loading-box{display:flex;align-items:center;justify-content:center;gap:10px;padding:70px 20px;color:var(--t3);font-size:13px}
+.loading-box .spinner{width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+/* Modal */
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:100;opacity:0;transition:opacity .18s ease}
+.modal-mask.show{display:flex;opacity:1}
+.modal{background:var(--card);border-radius:var(--radius-lg);width:560px;max-width:92vw;max-height:88vh;overflow:auto;
+        box-shadow:0 20px 60px rgba(0,0,0,.22);transform:scale(.96);transition:transform .18s ease}
+.modal-mask.show .modal{transform:scale(1)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#fff,#fafbfc)}
+.modal-head .t{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.modal-close{cursor:pointer;font-size:22px;color:var(--t3);border:none;background:none;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:.15s}
+.modal-close:hover{background:var(--hover);color:var(--danger)}
+.modal-body{padding:18px}
+.modal-foot{padding:14px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;background:#fafbfc}
+/* === 新建阶段弹窗：Tab + Pill === */
+.phase-tabs{display:flex;background:#f0f2f5;border-radius:var(--radius);padding:4px;gap:4px;margin-top:6px}
+.phase-tab{flex:1;padding:9px 12px;text-align:center;border-radius:6px;cursor:pointer;font-size:13px;color:var(--t2);transition:.18s;user-select:none;font-weight:500}
+.phase-tab:hover{color:var(--t1)}
+.phase-tab.active{background:var(--card);color:var(--accent);box-shadow:var(--shadow-sm);font-weight:600}
+.phase-tab .badge{display:inline-block;background:rgba(33,150,243,.12);color:var(--accent);font-size:10px;padding:1px 6px;border-radius:8px;margin-left:6px;font-weight:600}
+.phase-tab.active .badge{background:var(--accent);color:#fff}
+.phase-pill-list{padding:6px 0 2px;max-height:340px;overflow-y:auto}
+.phase-group{margin-bottom:14px}
+.phase-group-title{font-size:12px;font-weight:600;color:var(--t2);margin-bottom:8px;display:flex;align-items:center;gap:8px;padding-left:2px}
+.phase-group-title .ic{width:4px;height:14px;background:var(--accent);border-radius:2px;display:inline-block}
+.phase-group-title .meta{margin-left:auto;font-size:11px;color:var(--t3);font-weight:400}
+.phase-pill-row{display:flex;flex-wrap:wrap;gap:8px}
+.phase-pill{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#fff;border:1.5px solid var(--border);border-radius:18px;font-size:13px;color:var(--t2);cursor:pointer;transition:.15s;user-select:none;font-weight:500}
+.phase-pill:hover{border-color:var(--accent);background:rgba(33,150,243,.05);color:var(--t1);transform:translateY(-1px)}
+.phase-pill.checked{background:linear-gradient(135deg,#2196f3,#1976d2);border-color:transparent;color:#fff;box-shadow:0 4px 12px rgba(33,150,243,.28)}
+.phase-pill.checked:hover{background:linear-gradient(135deg,#1e88e5,#1565c0);color:#fff}
+.phase-pill .check{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(0,0,0,.05);font-size:10px;color:var(--t3);transition:.15s}
+.phase-pill.checked .check{background:rgba(255,255,255,.25);color:#fff}
+.phase-pill .sub-count{display:inline-block;background:rgba(33,150,243,.1);color:var(--accent);font-size:10px;padding:1px 6px;border-radius:8px;font-weight:600;margin-left:2px}
+.phase-pill.checked .sub-count{background:rgba(255,255,255,.25);color:#fff}
+.phase-preview{margin-top:14px;padding:12px 14px;background:linear-gradient(135deg,rgba(33,150,243,.05),rgba(33,150,243,.02));border:1px dashed rgba(33,150,243,.4);border-radius:var(--radius);font-size:12px;color:var(--t2)}
+.phase-preview-title{font-weight:600;color:var(--t1);margin-bottom:8px;display:flex;align-items:center;gap:6px;font-size:13px}
+.phase-preview-title .ic{color:var(--accent)}
+.phase-preview-list{display:flex;flex-wrap:wrap;gap:6px;min-height:24px}
+.phase-preview-list .prev-tag{display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid rgba(33,150,243,.3);color:var(--accent2);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500}
+.phase-preview-list .prev-tag.muted{background:#f8f9fb;border-color:var(--border);color:var(--t3)}
+.phase-preview-empty{color:var(--t3);font-size:11px;font-style:italic}
+.phase-manual-area{width:100%;padding:10px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--t1);outline:none;resize:vertical;min-height:90px;font-family:inherit;line-height:1.6;transition:.15s}
+.phase-manual-area:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px rgba(33,150,243,.1)}
+.phase-modal{width:620px}
+.phase-modal .modal-body{max-height:70vh}
+.modal.wide{width:900px;max-width:95vw}
+.batch-modal{width:720px;max-width:95vw}
+.project-modal{width:720px;max-width:95vw}
+.project-modal .phase-group{margin-bottom:12px}
+.project-modal .phase-group-title{font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.project-modal .phase-group-title .link{font-size:11px;color:var(--accent);cursor:pointer;font-weight:500}
+.project-modal .phase-list{display:flex;gap:10px;flex-wrap:wrap}
+.project-modal .phase-check{display:flex;align-items:center;gap:5px;background:#f8f9fb;border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 10px;font-size:12px;cursor:pointer;transition:.12s}
+.project-modal .phase-check:hover{border-color:var(--accent);background:rgba(33,150,243,.06)}
+.project-modal .phase-check input{margin:0;width:14px;height:14px;accent-color:var(--accent)}
+.project-modal .preview-tree{background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-size:12px;color:var(--t2);max-height:220px;overflow:auto}
+.project-modal .preview-tree .root{font-weight:700;color:var(--t1);margin-bottom:6px}
+.project-modal .preview-tree .part{margin:4px 0 4px 14px}
+.project-modal .preview-tree .phase{margin:2px 0 2px 28px;color:var(--t3)}
+.project-modal .preview-empty{color:var(--t3);text-align:center;padding:20px}
+.project-modal .hint{font-size:11px;color:var(--t3);margin-top:4px}
+.batch-modal .field select[multiple]{min-height:160px}
+.batch-hint{font-size:12px;color:var(--t3);margin-top:4px}
+.batch-search{width:100%;padding:8px 11px;margin-bottom:8px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px}
+.batch-search:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(33,150,243,.1)}
+.batch-check-list{border:1px solid var(--border);border-radius:var(--radius-sm);max-height:170px;overflow:auto;background:var(--input-bg);padding:5px}
+.batch-check-item{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;transition:.12s;border-radius:var(--radius-sm);font-size:13px}
+.batch-check-item:hover{background:rgba(33,150,243,.08)}
+.batch-check-item.hidden{display:none}
+.batch-check-item input[type=checkbox]{margin:0;width:16px;height:16px;cursor:pointer;accent-color:var(--accent)}
+.batch-check-item span{pointer-events:none}
+.batch-pos-btn{border-color:var(--border);color:var(--t2);background:#fff}
+.batch-pos-btn:hover{border-color:var(--accent);color:var(--accent)}
+.batch-pos-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.batch-modal .hint{font-size:12px;color:var(--t2);margin-top:6px}
+.batch-perm{border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--input-bg);padding:10px;max-height:260px;overflow:auto}
+.batch-perm-loading{color:var(--t3);font-size:12px;text-align:center;padding:20px}
+.batch-perm-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border)}
+.batch-perm-row:last-child{border-bottom:none}
+.batch-perm-row.root{padding-bottom:10px;margin-bottom:6px;border-bottom:1px solid var(--border)}
+.batch-perm-label{flex:1 1 0;font-size:12px;color:var(--t1);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.batch-perm-label .perm-icon{margin-right:4px}
+.batch-perm-row.phase .batch-perm-label{padding-left:0}
+.batch-perm-row.doctype .batch-perm-label{padding-left:12px;color:var(--t2)}
+.batch-perm-sel{flex:0 0 110px;width:110px;padding:3px 6px;font-size:12px;background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm)}
+.batch-perm-toggle{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:0 0 18px;font-size:11px;color:var(--t3);cursor:pointer;border-radius:var(--radius-sm);transition:.12s}
+.batch-perm-toggle:hover{background:rgba(33,150,243,.12);color:var(--accent)}
+.batch-perm-row.doctype.hidden{display:none}
+.batch-perm-sel:focus{outline:none;border-color:var(--accent)}
+.batch-perm-btns{display:flex;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.batch-perm-admin-hint{font-size:12px;color:var(--t3);padding:10px 0}
+.perm-info{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px;background:var(--input-bg);border-radius:var(--radius-sm);font-size:14px}
+.perm-info strong{font-weight:700;color:var(--t1)}
+.perm-role-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.perm-role-row label{font-size:13px;color:var(--t2);font-weight:600}
+.perm-role-row .custom-select{position:relative;display:inline-block}
+.perm-role-row select#permRole{padding:8px 34px 8px 12px;min-width:160px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--t1);font-size:13px;appearance:none;-webkit-appearance:none;cursor:pointer}
+.perm-role-row select#permRole:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(33,150,243,.12)}
+.perm-role-row .custom-select::after{content:'▼';position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--t3);pointer-events:none}
+.perm-btns{display:flex;gap:8px;margin-bottom:14px}
+.perm-tree{border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--input-bg);padding:8px;max-height:360px;overflow:auto}
+.perm-node{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--radius-sm);transition:.12s}
+.perm-node:hover{background:rgba(33,150,243,.06)}
+.perm-node.root{background:#fff;border:1px solid var(--border);margin-bottom:8px}
+.perm-node.phase{background:#fff;border:1px solid var(--border);margin:4px 0;cursor:pointer}
+.perm-node.doctype{padding-left:18px;background:#fff;border:1px solid var(--border);margin:0 !important;padding:0 6px 0 18px !important;font-size:12px !important;min-height:22px !important;height:22px !important;gap:4px !important;line-height:1.2;overflow:hidden}
+.perm-node.doctype:hover{background:rgba(33,150,243,.04)}
+.perm-node.doctype .perm-toggle.empty{display:none}
+.perm-node.doctype .perm-icon{font-size:11px}
+.perm-node.doctype .perm-label{font-size:12px}
+.perm-node.doctype .perm-sel{padding:1px 4px !important;font-size:11px !important;min-width:80px;height:22px}
+.perm-children{padding-left:8px}
+.perm-hint{font-size:12px;color:var(--t3);margin:6px 0 8px 24px}
+.perm-toggle{width:16px;height:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t3);font-size:11px;transition:.15s}
+.perm-toggle.collapsed{transform:rotate(-90deg)}
+.perm-toggle.empty{visibility:hidden}
+.perm-icon{font-size:13px}
+.perm-label{flex:1;font-size:13px;color:var(--t1)}
+.perm-sel{padding:5px 8px;font-size:12px;min-width:110px;background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm)}
+.perm-sel:focus{outline:none;border-color:var(--accent)}
+.perm-children.hidden{display:none}
+.perm-admin-hint{padding:10px 12px;background:rgba(33,150,243,.08);border:1px solid rgba(33,150,243,.2);border-radius:var(--radius-sm);color:var(--accent);font-size:13px;margin-bottom:12px}
+.perm-tree.perm-admin .perm-node{opacity:.85}
+.perm-tree.perm-admin .perm-sel{opacity:.7;cursor:not-allowed}
+.modal-tabs{display:flex;gap:6px;padding:0 18px;border-bottom:1px solid var(--border);background:#f8f9fb}
+.modal-tab{padding:10px 16px;font-size:13px;color:var(--t2);cursor:pointer;border-radius:var(--radius-sm) var(--radius-sm) 0 0;border:1px solid transparent;border-bottom:none;margin-bottom:-1px;background:transparent;transition:.15s}
+.modal-tab:hover{color:var(--accent);background:rgba(33,150,243,.06)}
+.modal-tab.active{color:var(--accent);font-weight:700;background:#fff;border-color:var(--border);border-bottom:1px solid #fff}
+/* Buttons */
+.btn{padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:#fff;cursor:pointer;font-size:13px;color:var(--t2);font-weight:500;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.04);display:inline-flex;align-items:center;justify-content:center;gap:5px}
+.btn:hover{border-color:var(--accent);color:var(--accent);background:#fff;box-shadow:0 2px 6px rgba(33,150,243,.12);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:var(--radius-sm)}
+.btn-xs{padding:3px 8px;font-size:11px;border-radius:var(--radius-sm)}
+.btn-primary{background:linear-gradient(180deg,var(--accent),var(--accent2));color:#fff;border-color:var(--accent2);box-shadow:0 2px 6px rgba(33,150,243,.25)}
+.btn-primary:hover{background:linear-gradient(180deg,#42a5f5,var(--accent));color:#fff;border-color:var(--accent);box-shadow:0 4px 10px rgba(33,150,243,.32)}
+.btn-danger{background:linear-gradient(180deg,#ef4444,var(--danger));color:#fff;border-color:var(--danger);box-shadow:0 2px 6px rgba(220,38,38,.18)}
+.btn-danger:hover{background:linear-gradient(180deg,#f87171,#dc2626);color:#fff;border-color:#dc2626;box-shadow:0 4px 10px rgba(220,38,38,.25)}
+.btn-success{background:linear-gradient(180deg,#22c55e,#16a34a);color:#fff;border-color:#16a34a;box-shadow:0 2px 6px rgba(34,197,94,.18)}
+.btn-success:hover{background:linear-gradient(180deg,#4ade80,#22c55e);box-shadow:0 4px 10px rgba(34,197,94,.25)}
+.btn-danger-hover{background:#fff;color:var(--danger);border-color:var(--danger)}
+.btn-danger-hover:hover{background:var(--danger);color:#fff;border-color:var(--danger);box-shadow:0 2px 6px rgba(220,38,38,.18)}
+.btn:disabled,.btn-primary:disabled,.btn-danger:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+/* Confirm dialog */
+.confirm-mask{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:400;opacity:0;transition:opacity .18s ease}
+.confirm-mask.show{display:flex;opacity:1}
+.confirm-box{background:var(--card);border-radius:var(--radius-lg);width:400px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.22);overflow:hidden;transform:scale(.96);transition:transform .18s ease}
+.confirm-box.wide{width:520px}
+.confirm-warn{display:flex;align-items:flex-start;gap:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 12px;margin-bottom:12px;color:#9a3412;font-size:13px;line-height:1.5}
+.confirm-warn .icon{font-size:16px;flex-shrink:0}
+.confirm-count{font-size:12px;color:var(--t3);margin-bottom:8px}
+.confirm-table{width:100%;border-collapse:collapse;font-size:13px}
+.confirm-table th,.confirm-table td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)}
+.confirm-table th{background:#f8fafc;color:var(--t2);font-weight:600;font-size:12px}
+.confirm-table tr:last-child td{border-bottom:none}
+.confirm-list{max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-top:8px}
+.confirm-mask.show .confirm-box{transform:scale(1)}
+.confirm-head{padding:16px 18px;border-bottom:1px solid var(--border);font-size:15px;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:8px}
+.confirm-body{padding:18px;font-size:13px;color:var(--t2);line-height:1.6}
+.confirm-foot{padding:14px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;background:#fafbfc}
+/* Prompt dialog */
+.prompt-msg{font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:12px}
+.prompt-msg:empty{display:none}
+.prompt-input{width:100%;box-sizing:border-box;padding:9px 11px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;color:var(--t1);outline:none;transition:.15s}
+.prompt-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentL)}
+.prompt-err{margin-top:8px;font-size:12px;color:var(--danger)}
+.prompt-err:empty{display:none}
+@keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--t2);margin-bottom:6px;font-weight:600}
+.field input,.field select, .field textarea{width:100%;padding:9px 11px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;color:var(--t1);outline:none;transition:.15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(33,150,243,.1)}
+.field select[multiple]{min-height:110px}
+/* Admin panel inner */
+.admin-section-title{font-size:14px;font-weight:700;color:var(--t1);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.admin-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.admin-toolbar .spacer{flex:1}
+.user-filter-input{width:140px;padding:6px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;color:var(--t1);outline:none;transition:.15s}
+.user-filter-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(33,150,243,.12)}
+.proj-select-row{display:flex;align-items:center;gap:10px}
+.proj-select-row label{font-size:13px;color:var(--t2);font-weight:600}
+.proj-select-row .custom-select{position:relative;display:inline-block}
+.proj-select-row select#ppProj{padding:8px 34px 8px 12px;min-width:180px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--t1);font-size:13px;appearance:none;-webkit-appearance:none;cursor:pointer}
+.proj-select-row select#ppProj:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(33,150,243,.12)}
+.proj-select-row .custom-select::after{content:'▼';position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--t3);pointer-events:none}
+.admin-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.admin-tbl th{background:#f8f9fb;color:var(--t3);font-weight:600;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.admin-tbl td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--t2);vertical-align:middle}
+.admin-tbl tbody tr{transition:background .12s}
+.admin-tbl tbody tr:hover{background:var(--accentL)}
+.admin-tbl tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+.admin-tbl .actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:nowrap;white-space:nowrap}
+.root-path-input{width:100%;min-width:260px;padding:8px 11px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;color:var(--t1);outline:none;transition:.15s;font-family:inherit}
+.root-path-input:hover{border-color:#cdd1d7}
+.root-path-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(33,150,243,.1);background:#fff}
+.admin-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+.admin-card-title{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:10px}
+.admin-empty{text-align:center;color:var(--t3);padding:40px 20px;font-size:13px}
+.import-steps{display:flex;gap:10px;margin-bottom:16px}
+.import-steps .step{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 8px;border-radius:var(--radius);background:var(--bg);color:var(--t3);font-size:13px;font-weight:600;border:1px solid var(--border)}
+.import-steps .step span{width:22px;height:22px;border-radius:50%;background:var(--border);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px}
+.import-steps .step.active{background:rgba(33,150,243,.08);border-color:rgba(33,150,243,.25);color:var(--accent)}
+.import-steps .step.active span{background:var(--accent)}
+.import-dropzone{display:block;border:2px dashed var(--border);border-radius:var(--radius);padding:28px 20px;text-align:center;cursor:pointer;transition:.15s;background:var(--bg);position:relative}
+.import-dropzone:hover{border-color:var(--accent);background:rgba(33,150,243,.04)}
+.import-dropzone input{display:none}
+.import-dropzone-icon{font-size:32px;margin-bottom:8px;opacity:.85}
+.import-dropzone-text{font-size:14px;color:var(--t1);font-weight:600;margin-bottom:6px}
+.import-dropzone-hint{font-size:12px;color:var(--t3)}
+.import-dropzone.dragover{border-color:var(--accent);background:rgba(33,150,243,.08)}
+.import-tips{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.12);border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--t2);line-height:1.8;margin-bottom:14px}
+.import-preview-empty{text-align:center;color:var(--t3);padding:32px 20px;font-size:13px;background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius)}
+.tag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:var(--radius-lg);font-size:11px;font-weight:600}
+.tag.blue{background:rgba(33,150,243,.1);color:var(--accent)}
+.tag.red{background:rgba(220,38,38,.1);color:var(--danger)}
+.tag.orange{background:rgba(234,88,12,.1);color:var(--warn)}
+.tag.green{background:rgba(34,197,94,.1);color:var(--ok)}
+.tag.gray{background:var(--input-bg);color:var(--t3)}
+.field label{display:block;font-size:12px;color:var(--t2);margin-bottom:5px;font-weight:600}
+.field input,.field select{width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;color:var(--t1);outline:none}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+/* Login */
+.login-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f0f4f8 0%,#d9e2ec 50%,#bcccdc 100%)}
+.login-card{background:#fff;border-radius:var(--radius-lg);padding:42px 36px;width:380px;box-shadow:0 24px 70px rgba(0,0,0,.12);border:1px solid rgba(0,0,0,.06)}
+.login-card .logo-wrap{text-align:center;margin-bottom:22px}
+.login-card .logo-wrap .big-logo{width:56px;height:56px;line-height:56px;text-align:center;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-radius:var(--radius-lg);font-size:24px;font-weight:800;margin:0 auto 12px;box-shadow:0 6px 18px rgba(33,150,243,.3)}
+.login-card h1{font-size:22px;color:var(--t1);text-align:center;margin-bottom:4px;font-weight:700}
+.login-card .sub{text-align:center;color:var(--t3);font-size:12px;margin-bottom:28px}
+.login-card .field{position:relative;margin-bottom:16px}
+.login-card .field label{font-size:12px;color:var(--t2);margin-bottom:6px}
+.login-card .field input{padding:12px 12px 12px 36px;font-size:14px;border:1px solid var(--border);transition:border-color .2s,box-shadow .2s}
+.login-card .field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(33,150,243,.1)}
+.login-card .field .icon{position:absolute;left:12px;bottom:12px;color:var(--t3);font-size:14px}
+.login-card .btn-primary{width:100%;padding:12px;font-size:15px;margin-top:4px;position:relative}
+.login-card .btn-primary:disabled{opacity:.7;cursor:not-allowed}
+.login-card .btn-primary .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.login-err{color:var(--danger);font-size:12px;text-align:center;margin-top:12px;min-height:16px}
+.login-card.shake{animation:shake .35s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+/* perm tree */
+.perm-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px dashed var(--border)}
+.perm-row .pl{font-size:12.5px;color:var(--t1);flex:1}
+.perm-row .pl.sub{padding-left:16px;color:var(--t2)}
+.perm-sel{padding:4px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;background:var(--input-bg)}
+/* toast */
+.toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:rgba(22,22,22,.92);color:#fff;
+        padding:11px 18px 11px 42px;border-radius:var(--radius);font-size:13px;z-index:200;display:none;
+        box-shadow:var(--shadow-pop);max-width:90vw}
+.toast::before{content:'✓';position:absolute;left:16px;top:50%;transform:translateY(-50%);width:20px;height:20px;
+        line-height:20px;text-align:center;background:var(--ok);border-radius:50%;font-size:12px;font-weight:700}
+.toast.err{background:rgba(170,30,30,.94)}
+.toast.err::before{content:'✕';background:var(--danger)}
+.toast.show{display:block;animation:fade .25s}
+@keyframes fade{from{opacity:0;transform:translate(-50%,-8px)}to{opacity:1;transform:translate(-50%,0)}}
+.admin-tabs{display:flex;gap:6px;padding:10px 16px 0;border-bottom:1px solid var(--border);background:var(--card)}
+.admin-tab{padding:8px 14px;font-size:13px;cursor:pointer;color:var(--t2);border-bottom:2px solid transparent}
+.admin-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.admin-body{flex:1;overflow:auto;padding:14px 16px}
+.pill{display:inline-block;padding:2px 8px;border-radius:var(--radius-lg);font-size:11px;font-weight:600}
+.pill.sa{background:rgba(220,38,38,0.1);color:var(--danger)}
+.pill.pa{background:rgba(234,88,12,0.1);color:var(--warn)}
+.pill.pd{background:rgba(33,150,243,0.1);color:var(--accent)}
+.pill.fz{background:rgba(120,120,120,0.12);color:#777}
+</style>
+</head>
+<body>
+
+<!-- 启动加载层 -->
+<div id="appLoading"><div class="spinner"></div><div class="txt">正在加载…</div></div>
+
+<!-- 登录页 -->
+<div class="login-wrap" id="loginWrap" style="display:none">
+  <div class="login-card" id="loginCard">
+    <div class="logo-wrap">
+      <div class="big-logo">NPI</div>
+      <h1>工程文件管理系统</h1>
+    </div>
+    <div class="field">
+      <label>工号</label>
+      <span class="icon">👤</span>
+      <input id="loginUid" placeholder="请输入工号" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('loginPw').focus()">
+    </div>
+    <div class="field">
+      <label>密码</label>
+      <span class="icon">🔒</span>
+      <input id="loginPw" type="password" placeholder="请输入密码" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-primary" id="loginBtn" onclick="doLogin()">登 录</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- 主界面 -->
+<div class="header" id="header" style="display:none">
+  <div class="logo">NPI</div>
+  <div class="title">工程文件管理系统</div>
+  <div class="hdr-nav" id="hdrNav"></div>
+  <div class="spacer"></div>
+  <div class="user-info">
+    <span id="hdrUser"></span>
+    <span class="role-badge" id="hdrRole"></span>
+  </div>
+  <div class="hdr-dropdown" id="hdrDropdown">
+    <button class="hdr-btn" onclick="toggleMgmtMenu(event)">管理 <span style="font-size:10px">▼</span></button>
+    <div class="hdr-menu hidden" id="mgmtMenu"></div>
+  </div>
+</div>
+
+<div class="layout" id="layout" style="display:none">
+  <div class="sidebar" id="sidebar">
+    <div class="sb-header"><span>项目导航</span><button class="sb-btn" onclick="loadTree()">刷新</button></div>
+    <div class="sb-actions" id="sbActions" style="display:none;padding:0 12px 8px;gap:6px">
+      <button class="sb-act-btn" onclick="createProject()">+ 项目</button>
+      <button class="sb-act-btn" onclick="createPart()">+ 零件</button>
+      <button class="sb-act-btn" onclick="createPhase()">+ 阶段</button>
+      <button class="sb-act-btn danger" onclick="deleteSelectedNode()">删除</button>
+    </div>
+    <div class="sb-search"><input id="treeSearch" placeholder="搜索项目/零件/阶段" oninput="renderTree()"></div>
+    <div class="tree-wrap" id="tree"></div>
+    <div class="legend">
+      <span><i class="dot green"></i>有权限/有文件</span>
+      <span><i class="dot orange"></i>有权限</span>
+      <span><i class="dot gray"></i>无权限</span>
+      <span><i class="dot red"></i>空目录</span>
+    </div>
+  </div>
+  <div class="sb-resizer" id="sbResizer"></div>
+  <div class="main">
+    <div class="toolbar" id="toolbar"></div>
+    <div class="sec-banner" id="secBanner"></div>
+    <div class="tbl-wrap" id="content"></div>
+  </div>
+</div>
+
+<!-- 用户导入弹窗 -->
+<div class="modal-mask" id="importUserMask">
+  <div class="modal wide">
+    <div class="modal-head"><span class="t">批量导入用户</span><button class="modal-close" onclick="closeModal('importUserMask')">×</button></div>
+    <div class="modal-body">
+      <div class="import-steps">
+        <div class="step active"><span>1</span>下载模板</div>
+        <div class="step"><span>2</span>上传文件</div>
+        <div class="step"><span>3</span>预览确认</div>
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-card-title">1. 下载导入模板</div>
+        <p style="font-size:13px;color:var(--t2);margin:0 0 12px">按标准格式填写，可减少导入错误。</p>
+        <button class="btn btn-primary" onclick="downloadUserTemplate()">⬇ 下载导入模板</button>
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-card-title">2. 上传填好的 Excel</div>
+        <label class="import-dropzone" for="importUserFile" id="importDropzone"
+          ondragover="event.preventDefault();this.classList.add('dragover')"
+          ondragleave="this.classList.remove('dragover')"
+          ondrop="event.preventDefault();event.stopPropagation();_onImportDrop(event)">
+          <div class="import-dropzone-icon">📂</div>
+          <div class="import-dropzone-text">点击选择 Excel 文件</div>
+          <div class="import-dropzone-hint">支持 .xlsx / .xls 格式，文件大小建议不超过 5MB</div>
+          <input type="file" id="importUserFile" accept=".xlsx,.xls" onchange="onImportUserFileChange()">
+        </label>
+      </div>
+
+      <div class="import-tips">
+        <b>填写提示</b>：工号、姓名为必填项；部门、角色、状态为可选项。角色支持「系统管理员 / 项目管理员 / 一般用户」（留空默认一般用户），状态支持「正常 / 冻结」（留空默认正常）。新增用户默认密码为 <b>123456</b>，首次登录需修改密码。
+      </div>
+
+      <div id="importUserPreview"><div class="import-preview-empty">请先上传 Excel 文件，导入前可预览并检查错误</div></div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('importUserMask')">取消</button><button class="btn btn-primary" id="importUserConfirm" style="display:none" onclick="confirmImportUsers()">确认导入</button></div>
+  </div>
+</div>
+
+<!-- 权限设置弹窗 -->
+<div class="modal-mask" id="permMask">
+  <div class="modal wide">
+    <div class="modal-head"><span class="t">权限设置</span><button class="modal-close" onclick="closeModal('permMask')">×</button></div>
+    <div class="modal-body" id="permBody"></div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('permMask')">取消</button><button class="btn btn-primary" onclick="savePerm()">保存权限</button></div>
+  </div>
+</div>
+
+<!-- 批量授权弹窗 -->
+<div class="modal-mask" id="batchMask">
+  <div class="modal batch-modal">
+    <div class="modal-head"><span class="t">批量授权</span><button class="modal-close" onclick="closeModal('batchMask')">×</button></div>
+    <div class="modal-body">
+      <div class="field">
+        <label>选择项目（可多选，勾选）</label>
+        <input type="text" class="batch-search" id="batchProjFilter" placeholder="输入项目编号筛选" oninput="filterBatchItems('batchProjList','batchProjFilter')">
+        <div class="batch-check-list" id="batchProjList"></div>
+        <div class="batch-hint" id="batchProjHint">已选择 0 个项目</div>
+      </div>
+      <div class="field">
+        <label>选择用户（可多选，勾选）</label>
+        <div class="batch-pos-bar" id="batchUserPosBar" style="margin-bottom:8px;display:none;flex-wrap:wrap;gap:6px;align-items:center">
+          <span style="font-size:12px;color:var(--t3)">按职位：</span>
+        </div>
+        <input type="text" class="batch-search" id="batchUserFilter" placeholder="输入姓名或工号筛选" oninput="filterBatchItems('batchUserList','batchUserFilter')">
+        <div style="display:flex;justify-content:flex-start;align-items:center;gap:6px;margin-bottom:6px">
+          <button class="btn btn-sm" onclick="batchSelectAllVisibleUsers(true)">全选当前</button>
+          <button class="btn btn-sm" onclick="batchSelectAllVisibleUsers(false)">取消全选</button>
+        </div>
+        <div class="batch-check-list" id="batchUserList"></div>
+        <div class="batch-hint" id="batchUserHint">已选择 0 个用户</div>
+      </div>
+      <div class="field"><label>项目角色</label><select id="batchRole" onchange="renderBatchPermPanel()"><option value="pd">一般用户</option><option value="projectAdmin">项目管理员</option></select></div>
+      <div class="field">
+        <label>初始权限（授权后按此初始化各阶段/文档类型）</label>
+        <div class="batch-perm" id="batchPermPanel">
+          <div class="batch-perm-loading">正在加载权限模板…</div>
+        </div>
+        <div class="hint">可在授权后用「权限设置」逐阶段/文档类型微调。</div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('batchMask')">取消</button><button class="btn btn-primary" onclick="saveBatch()">确认授权</button></div>
+  </div>
+</div>
+
+<!-- 零件 3D 图弹窗 -->
+<div class="modal-mask" id="m3dMask">
+  <div class="modal m3d-modal">
+    <div class="modal-head"><span class="t">🧊 零件 3D 图</span><button class="modal-close" onclick="closeModal('m3dMask')">×</button></div>
+    <div class="modal-body m3d-body">
+      <div class="m3d-left">
+        <div class="m3d-viewer" id="m3dViewer">
+          <div class="m3d-empty" id="m3dEmpty">从右侧选择一个模型开始预览</div>
+        </div>
+        <div class="m3d-viewer-bar">
+          <button class="btn btn-xs" onclick="m3dResetView()">重置视角</button>
+          <button class="btn btn-xs" onclick="m3dToggleWire()">线框</button>
+          <button class="btn btn-xs" onclick="m3dToggleGrid()">网格</button>
+          <span class="spacer"></span>
+          <span class="m3d-stat" id="m3dStat"></span>
+        </div>
+        <div class="m3d-meta" id="m3dMeta"></div>
+      </div>
+      <div class="m3d-right">
+        <div class="m3d-toolbar">
+          <label class="btn btn-primary btn-sm" style="cursor:pointer">+ 上传 3D 模型<input type="file" accept=".step,.stp,.iges,.igs,.stl,.brep" style="display:none" onchange="m3dUpload(this)"></label>
+          <span class="spacer"></span>
+          <span class="m3d-cli" id="m3dCli"></span>
+        </div>
+        <div class="m3d-list" id="m3dList"><div class="m3d-loading">加载中…</div></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('m3dMask')">关闭</button></div>
+  </div>
+</div>
+
+<!-- 新建项目弹窗 -->
+<div class="modal-mask" id="projCreateMask">
+  <div class="modal project-modal">
+    <div class="modal-head"><span class="t">+ 新建项目</span><button class="modal-close" onclick="closeModal('projCreateMask')">×</button></div>
+    <div class="modal-body">
+      <div class="field">
+        <label>项目编号 <span style="color:var(--red)">*</span></label>
+        <input type="text" id="newProjNo" placeholder="例：X3082（自动转大写）" oninput="this.value=this.value.toUpperCase();updateProjPreview()">
+      </div>
+      <div class="field">
+        <label>零件名称 <span style="color:var(--red)">*</span></label>
+        <textarea id="newProjParts" rows="5" placeholder="每行一个零件名称，例：&#10;Top Cover&#10;Bottom Case&#10;Bracket" oninput="updateProjPreview()"></textarea>
+        <div class="hint">每行输入一个零件名称</div>
+      </div>
+      <div class="field">
+        <label>选择 NPI 阶段 <span style="color:var(--red)">*</span></label>
+        <div class="phase-group">
+          <div class="phase-group-title">模具/治具阶段 <span class="link" onclick="togglePhaseGroup('tooling',true)">全选</span> <span class="link" onclick="togglePhaseGroup('tooling',false)">取消全选</span></div>
+          <div class="phase-list" id="phaseGroupTooling">
+            <label class="phase-check"><input type="checkbox" value="Tooling" onchange="updateProjPreview()"> <span>Tooling</span></label>
+            <label class="phase-check"><input type="checkbox" value="Fixture" onchange="updateProjPreview()"> <span>Fixture</span></label>
+          </div>
+        </div>
+        <div class="phase-group">
+          <div class="phase-group-title">开发验证阶段（P1-PVT） <span class="link" onclick="togglePhaseGroup('dv',true)">全选</span> <span class="link" onclick="togglePhaseGroup('dv',false)">取消全选</span></div>
+          <div class="phase-list" id="phaseGroupDv">
+            <label class="phase-check"><input type="checkbox" value="P1" onchange="updateProjPreview()"> <span>P1</span></label>
+            <label class="phase-check"><input type="checkbox" value="P2" onchange="updateProjPreview()"> <span>P2</span></label>
+            <label class="phase-check"><input type="checkbox" value="EVT" onchange="updateProjPreview()"> <span>EVT</span></label>
+            <label class="phase-check"><input type="checkbox" value="DVT" onchange="updateProjPreview()"> <span>DVT</span></label>
+            <label class="phase-check"><input type="checkbox" value="PVT" onchange="updateProjPreview()"> <span>PVT</span></label>
+          </div>
+        </div>
+        <div class="phase-group">
+          <div class="phase-group-title">量产阶段 <span class="link" onclick="togglePhaseGroup('mp',true)">全选</span> <span class="link" onclick="togglePhaseGroup('mp',false)">取消全选</span></div>
+          <div class="phase-list" id="phaseGroupMp">
+            <label class="phase-check"><input type="checkbox" value="MP" onchange="updateProjPreview()"> <span>MP</span></label>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>将自动创建的目录结构预览</label>
+        <div class="preview-tree" id="newProjPreview"><div class="preview-empty">请先填写项目编号和零件名称</div></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('projCreateMask')">取消</button><button class="btn btn-primary" onclick="saveNewProject()">确认创建</button></div>
+  </div>
+</div>
+
+<!-- 新建零件弹窗 -->
+<div class="modal-mask" id="partCreateMask">
+  <div class="modal project-modal">
+    <div class="modal-head"><span class="t">+ 新建零件</span><button class="modal-close" onclick="closeModal('partCreateMask')">×</button></div>
+    <div class="modal-body">
+      <div class="field"><label>所属项目</label><input type="text" id="newPartProj" readonly style="background:#f8f9fb"></div>
+      <div class="field">
+        <label>零件名称 <span style="color:var(--red)">*</span></label>
+        <textarea id="newPartName" rows="4" placeholder="请输入零件名称，每行一个可批量创建"></textarea>
+        <div class="hint">每行填写一个零件名称，回车换行可批量新增多个零件。</div>
+      </div>
+      <div class="field">
+        <label>选择 NPI 阶段 <span style="color:var(--red)">*</span></label>
+        <div class="phase-group">
+          <div class="phase-group-title">从阶段模板中选择 <span class="link" onclick="toggleAllPartPhases(true)">全选</span> <span class="link" onclick="toggleAllPartPhases(false)">取消全选</span></div>
+          <div class="phase-list" id="partPhaseList">
+            <div class="preview-empty" style="padding:10px">加载中...</div>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>将自动创建的目录结构预览</label>
+        <div class="preview-tree" id="newPartPreview"><div class="preview-empty">请输入零件名称并选择阶段</div></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('partCreateMask')">取消</button><button class="btn btn-primary" onclick="saveNewPart()">确认创建</button></div>
+  </div>
+</div>
+
+<!-- 新建阶段弹窗 -->
+<div class="modal-mask" id="phaseCreateMask">
+  <div class="modal phase-modal">
+    <div class="modal-head"><span class="t">➕ 新建阶段</span><button class="modal-close" onclick="closeModal('phaseCreateMask')">×</button></div>
+    <div class="modal-body">
+      <div class="field"><label>所属项目 / 零件</label><input type="text" id="newPhaseParent" readonly style="background:#f8f9fb"></div>
+
+      <div class="field">
+        <label>选择创建方式</label>
+        <div class="phase-tabs">
+          <div class="phase-tab active" id="phaseSrcTabTemplate" onclick="setPhaseSrc('template')">📋 从阶段模版选择 <span class="badge">推荐</span></div>
+          <div class="phase-tab" id="phaseSrcTabManual" onclick="setPhaseSrc('manual')">✍️ 手动输入阶段名称</div>
+        </div>
+        <div id="phaseSrcHintTemplate" class="hint" style="font-size:11px;color:var(--t3);margin-top:8px;line-height:1.6">
+          选择预设阶段后，系统会自动创建该阶段的预设子文件夹，并在左侧项目树按模板顺序排列。鼠标悬停阶段名可查看其子文件夹。
+        </div>
+        <div id="phaseSrcHintManual" class="hint" style="font-size:11px;color:var(--t3);margin-top:8px;line-height:1.6;display:none">
+          每行输入一个阶段名称。手动创建的阶段不会预建子文件夹，会排在已有阶段之后。
+        </div>
+      </div>
+
+      <div class="field" id="phaseSrcTemplate">
+        <div id="phaseTplList" class="phase-pill-list"><div class="preview-empty" style="padding:14px">加载中...</div></div>
+      </div>
+
+      <div class="field" id="phaseSrcManual" style="display:none">
+        <textarea id="newPhaseNames" class="phase-manual-area" rows="4" placeholder="每行一个阶段名称&#10;示例：&#10;试产 1&#10;试产 2&#10;小批量"></textarea>
+      </div>
+
+      <div class="phase-preview" id="phasePreview">
+        <div class="phase-preview-title"><span class="ic">✓</span> 将创建 <span id="phasePreviewCount" style="color:var(--accent)">0</span> 个阶段</div>
+        <div id="phasePreviewList" class="phase-preview-list"><span class="phase-preview-empty">尚未选择</span></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('phaseCreateMask')">取消</button><button class="btn btn-primary" onclick="saveNewPhase()">确认创建</button></div>
+  </div>
+</div>
+
+<!-- 修改密码弹窗 -->
+<div class="modal-mask" id="pwMask">
+  <div class="modal">
+    <div class="modal-head"><span class="t">修改密码</span><button class="modal-close" onclick="closeModal('pwMask')">×</button></div>
+    <div class="modal-body">
+      <div class="field"><label>原密码</label><input id="pwOld" type="password"></div>
+      <div class="field"><label>新密码</label><input id="pwNew" type="password"></div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('pwMask')">取消</button><button class="btn btn-primary" onclick="submitChangePw()">确认</button></div>
+  </div>
+</div>
+
+<!-- 用户管理弹窗（新增 / 编辑复用） -->
+<div class="modal-mask" id="userMask">
+  <div class="modal">
+    <div class="modal-head"><span class="t" id="userMaskTitle">新增用户</span><button class="modal-close" onclick="closeModal('userMask')">×</button></div>
+    <div class="modal-body">
+      <div class="field"><label>工号</label><input id="uUid"></div>
+      <div class="field"><label>姓名</label><input id="uName"></div>
+      <div class="field"><label>部门</label><input id="uDept"></div>
+      <div class="field"><label>职位</label><select id="uPosition"><option value="">未设置</option></select></div>
+      <div class="field"><label>角色</label><select id="uRole"><option value="pd">一般用户</option><option value="projectAdmin">项目管理员</option><option value="superAdmin">系统管理员</option></select></div>
+      <div class="field"><label>密码</label><input id="uPw" placeholder="新增必填；编辑时留空则不修改"></div>
+      <input type="hidden" id="uEditId">
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('userMask')">取消</button><button class="btn btn-primary" onclick="saveUser()">保存</button></div>
+  </div>
+</div>
+
+<!-- 职位管理弹窗：编辑职位 -->
+<div class="modal-mask" id="posMask">
+  <div class="modal">
+    <div class="modal-head"><span class="t">编辑职位</span><button class="modal-close" onclick="closeModal('posMask')">×</button></div>
+    <div class="modal-body">
+      <div class="field"><label>职位名称</label><input id="posName"></div>
+      <div class="field"><label>描述</label><input id="posDesc"></div>
+      <input type="hidden" id="posId">
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('posMask')">取消</button><button class="btn btn-primary" onclick="savePosition()">保存</button></div>
+  </div>
+</div>
+
+<!-- 系统管理大弹窗 -->
+<div class="modal-mask" id="adminMask">
+  <div class="modal wide">
+    <div class="modal-head"><span class="t">⚙ 系统管理</span><button class="modal-close" onclick="closeModal('adminMask')">×</button></div>
+    <div class="modal-tabs" id="adminTabs"></div>
+    <div class="modal-body" id="adminBody" style="min-height:320px;max-height:60vh;overflow:auto"></div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('adminMask')">关闭</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 右键菜单（项目/零件/阶段/文件夹） -->
+<div class="ctx-menu" id="ctxMenu"></div>
+
+<!-- 自定义确认对话框 -->
+<div class="confirm-mask" id="confirmMask">
+  <div class="confirm-box" id="confirmBox">
+    <div class="confirm-head" id="confirmTitle">确认</div>
+    <div class="confirm-body" id="confirmBody"></div>
+    <div class="confirm-foot">
+      <button class="btn" onclick="closeConfirm()">取消</button>
+      <button class="btn btn-primary" id="confirmOk" onclick="onConfirmOk()">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 零件信息字段配置 -->
+<div class="modal-mask" id="partInfoFieldsMask">
+  <div class="modal project-modal">
+    <div class="modal-head"><span class="t">配置零件信息字段</span><button class="modal-close" onclick="closeModal('partInfoFieldsMask')">×</button></div>
+    <div class="modal-body" id="partInfoFieldsBody"></div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('partInfoFieldsMask')">取消</button><button class="btn btn-primary" onclick="savePartInfoFields()">保存</button></div>
+  </div>
+</div>
+
+<!-- 自定义输入对话框 -->
+<div class="confirm-mask" id="promptMask">
+  <div class="confirm-box">
+    <div class="confirm-head" id="promptTitle">输入</div>
+    <div class="confirm-body">
+      <div class="prompt-msg" id="promptMsg"></div>
+      <input type="text" id="promptInput" class="prompt-input" maxlength="120" autocomplete="off" spellcheck="false" placeholder="请输入..." onkeydown="if(event.key==='Enter'){event.preventDefault();onPromptOk();}else if(event.key==='Escape'){event.preventDefault();closePrompt();}">
+      <div class="prompt-err" id="promptErr"></div>
+    </div>
+    <div class="confirm-foot">
+      <button class="btn" onclick="closePrompt()">取消</button>
+      <button class="btn btn-primary" id="promptOk" onclick="onPromptOk()">确定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';  // 同源
+let CURRENT = {user:null, projects:[], treeFilter:''};
+// 批量授权：按职位分组的矩阵覆盖集 {posKey: {'阶段|子文件夹': perm}}，posKey 为小写职位名，'' 表示「全部」标签
+let BATCH_POS_PERM = {};
+let BATCH_CUR_POS = '';
+
+function api(path, opts){
+  opts = opts||{};
+  const o = Object.assign({credentials:'same-origin'}, opts);
+  if(o.body && typeof o.body!=='string' && !(o.body instanceof FormData)){ o.body = JSON.stringify(o.body); }
+  if(o.body && !(o.body instanceof FormData) && !o.headers) o.headers = {'Content-Type':'application/json'};
+  return fetch(API+path, o).then(r=>{
+    if(r.status===401){ return r.json().catch(()=>null); }
+    return r.json().catch(()=>({error:'解析失败'}));
+  });
+}
+function toast(msg, isErr){
+  const t=document.getElementById('toast'); t.textContent=msg;
+  t.className='toast'+(isErr?' err':'');
+  void t.offsetWidth;
+  t.classList.add('show'); clearTimeout(t._t);
+  t._t=setTimeout(()=>t.classList.remove('show'), 2400);
+}
+let confirmCallback=null;
+function askConfirm(title, body, cb, okText, okClass, boxClass){
+  document.getElementById('confirmTitle').textContent=title||'确认';
+  document.getElementById('confirmBody').innerHTML=body||'';
+  const okBtn=document.getElementById('confirmOk');
+  okBtn.textContent=okText||'确定';
+  okBtn.className='btn '+(okClass||'btn-primary');
+  document.getElementById('confirmBox').className='confirm-box '+(boxClass||'');
+  confirmCallback=cb;
+  const el=document.getElementById('confirmMask');
+  el.style.zIndex = ++overlayZ;
+  el.classList.add('show');
+}
+function onConfirmOk(){
+  const cb=confirmCallback; confirmCallback=null; closeConfirm();
+  if(cb) cb();
+}
+function closeConfirm(){ document.getElementById('confirmMask').classList.remove('show'); confirmCallback=null; }
+
+/* 自定义输入弹窗（替代浏览器原生 prompt） */
+let promptCallback=null, promptResolve=null;
+function askPrompt(title, msg, defaultValue, cb, okText, okClass){
+  document.getElementById('promptTitle').textContent=title||'输入';
+  document.getElementById('promptMsg').textContent=msg||'';
+  const inp=document.getElementById('promptInput');
+  inp.value=defaultValue||'';
+  document.getElementById('promptErr').textContent='';
+  const okBtn=document.getElementById('promptOk');
+  okBtn.textContent=okText||'确定';
+  okBtn.className='btn '+(okClass||'btn-primary');
+  promptCallback=cb;
+  const el=document.getElementById('promptMask');
+  el.style.zIndex=++overlayZ;
+  el.classList.add('show');
+  setTimeout(()=>{ inp.focus(); inp.select(); },60);
+}
+function onPromptOk(){
+  const v=(document.getElementById('promptInput').value||'').trim();
+  if(!v){ document.getElementById('promptErr').textContent='请输入内容'; return; }
+  const cb=promptCallback; promptCallback=null;
+  if(cb) cb(v);       // 先回调（内部会清 promptResolve 并 resolve 值）
+  closePrompt();      // 再关闭，避免误触发 null
+}
+function closePrompt(){
+  document.getElementById('promptMask').classList.remove('show');
+  promptCallback=null;
+  if(promptResolve){ const r=promptResolve; promptResolve=null; r(null); }
+}
+function askPromptAsync(title, msg, defaultValue, okText){
+  return new Promise(resolve=>{
+    promptResolve=resolve;
+    askPrompt(title, msg, defaultValue, v=>{ const r=promptResolve; promptResolve=null; if(r) r(v); }, okText);
+  });
+}
+
+async function doLogin(){
+  const uid=document.getElementById('loginUid').value.trim();
+  const pw=document.getElementById('loginPw').value;
+  const err=document.getElementById('loginErr'); err.textContent='';
+  const btn=document.getElementById('loginBtn');
+  const card=document.getElementById('loginCard');
+  if(!uid||!pw){ err.textContent='工号和密码均必填'; card.classList.add('shake'); setTimeout(()=>card.classList.remove('shake'),400); return; }
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>登录中…';
+  const r=await api('/api/login',{method:'POST',body:{uid,password:pw}});
+  btn.disabled=false; btn.innerHTML='登 录';
+  if(r.error){ err.textContent=r.error; card.classList.add('shake'); setTimeout(()=>card.classList.remove('shake'),400); return; }
+  if(r.must_change){ CURRENT.user={uid:r.uid,name:r.name,role:r.role}; enforceForceChange(); return; }
+  await initApp();
+}
+function doLogout(){ api('/api/logout',{method:'POST'}).then(()=>location.reload()); }
+
+async function initApp(me){
+  if(!me) me = await api('/api/me');
+  if(!me || !me.uid || me.error){ CURRENT.user=null; return; }
+  CURRENT.user=me;
+  document.getElementById('loginWrap').style.display='none';
+  document.getElementById('header').style.display='flex';
+  document.getElementById('layout').style.display='flex';
+  document.getElementById('hdrUser').textContent=me.name;
+  const rb=document.getElementById('hdrRole');
+  const map={superAdmin:['sa','SA'],projectAdmin:['pa','PA'],pd:['pd','PD']};
+  rb.className='role-badge '+(map[me.role]?map[me.role][0]:'pd');
+  rb.textContent=map[me.role]?map[me.role][1]:'PD';
+  renderHeaderNav();
+  document.getElementById('sbActions').style.display=(me.role==='superAdmin'||me.role==='projectAdmin')?'flex':'none';
+  await loadTree();
+}
+
+function renderHeaderNav(){
+  const u=CURRENT.user;
+  const el=document.getElementById('hdrNav');
+  if(el) el.innerHTML='';
+  const dd=document.getElementById('hdrDropdown');
+  const menu=document.getElementById('mgmtMenu');
+  if(!dd || !menu) return;
+  const canAdmin=u.role==='superAdmin'||u.role==='projectAdmin';
+  const canSys=u.role==='superAdmin';
+  dd.style.display='block';
+  const roleName={superAdmin:'系统管理员',projectAdmin:'项目管理员',pd:'一般用户'}[u.role]||'一般用户';
+  let html='<div class="hdr-menu-user">'
+    +'<div class="u-name">'+esc(u.name)+' <span style="color:var(--t3);font-weight:400">('+esc(u.uid)+')</span></div>'
+    +'<div class="u-role">'+esc(roleName)+'</div>'
+    +'</div>';
+  if(canAdmin || canSys){
+    html+='<div class="hdr-menu-group-title">系统管理</div>';
+    if(canAdmin) html+='<button onclick="openMgmt(\'projperms\')"><span class="ic">⚙</span>项目权限</button>';
+    if(canSys){
+      html+='<button onclick="openMgmt(\'users\')"><span class="ic">👥</span>用户管理</button>';
+      html+='<button onclick="openMgmt(\'positions\')"><span class="ic">🏢</span>职位管理</button>';
+      html+='<button onclick="openMgmt(\'audit\')"><span class="ic">📋</span>审计日志</button>';
+      html+='<button onclick="openMgmt(\'phasetmpl\')"><span class="ic">📁</span>阶段模板</button>';
+      html+='<button onclick="openMgmt(\'settings\')"><span class="ic">🔧</span>系统设置</button>';
+    }
+    html+='<div class="sep"></div>';
+  }
+  html+='<div class="hdr-menu-group-title">个人</div>';
+  html+='<button onclick="openMgmtPw()"><span class="ic">🔒</span>修改密码</button>';
+  html+='<button onclick="openMgmtLogout()"><span class="ic">🚪</span>退出</button>';
+  menu.innerHTML=html;
+}
+function openMgmt(tab){ closeMgmtMenu(); openModal('adminMask'); openAdminTab(tab); }
+function openMgmtPw(){ closeMgmtMenu(); showChangePw(); }
+function openMgmtLogout(){ closeMgmtMenu(); doLogout(); }
+function toggleMgmtMenu(e){ if(e) e.stopPropagation(); const m=document.getElementById('mgmtMenu'); if(m) m.classList.toggle('hidden'); }
+function closeMgmtMenu(){ const m=document.getElementById('mgmtMenu'); if(m) m.classList.add('hidden'); }
+document.addEventListener('click', function(e){ if(!e.target.closest('.hdr-dropdown')) closeMgmtMenu(); });
+
+// 侧边栏宽度拖拽调整
+(function initSidebarResizer(){
+  const sidebar=document.getElementById('sidebar');
+  const resizer=document.getElementById('sbResizer');
+  if(!sidebar || !resizer) return;
+  const saved = localStorage.getItem('npisidebarWidth');
+  if(saved) sidebar.style.width = saved + 'px';
+  let dragging=false, startX=0, startW=0;
+  resizer.addEventListener('mousedown', function(e){
+    dragging=true;
+    startX=e.clientX;
+    startW=sidebar.offsetWidth;
+    resizer.classList.add('dragging');
+    document.body.style.cursor='col-resize';
+    document.body.style.userSelect='none';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e){
+    if(!dragging) return;
+    let w = startW + (e.clientX - startX);
+    const min = 200, max = 500;
+    if(w < min) w = min;
+    if(w > max) w = max;
+    sidebar.style.width = w + 'px';
+  });
+  document.addEventListener('mouseup', function(){
+    if(!dragging) return;
+    dragging=false;
+    resizer.classList.remove('dragging');
+    document.body.style.cursor='';
+    document.body.style.userSelect='';
+    localStorage.setItem('npisidebarWidth', sidebar.offsetWidth);
+  });
+})();
+
+let TREE=[]; // 扁平树数据
+async function loadTree(){
+  const r=await api('/api/projects');
+  if(r.error){ toast(r.error,true); return; }
+  CURRENT.projects=r;
+  // 载入各项目内角色，供树节点权限判断
+  const ids=r.map(p=>p.id).join(',');
+  const multi=await api('/api/permissions/multi?pids='+ids);
+  CURRENT.roles=multi;
+  // 预载阶段文档模板
+  const docs=await api('/api/phase-docs');
+  CURRENT.templates=docs.templates||[];
+  CURRENT.custom=docs.custom||[];
+  buildTreeData(r);
+  renderTree();
+}
+
+function buildTreeData(projects){
+  TREE=[];
+  projects.forEach(p=>{
+    TREE.push({level:0,type:'project',id:p.id,projId:p.id,name:p.project_no,canManage:p.canManage,hidden:!!p.hidden,file_count:p.file_count||0,part_count:(p.parts||[]).length});
+    (p.parts||[]).forEach(pt=>{
+      // 提取 (phase, doc_type) → file_count 映射（来自后端）
+      const dtMap = {};
+      (pt.doc_types||[]).forEach(x=>{ if(x.doc_type!=null) dtMap[(x.phase||'')+'|'+(x.doc_type||'')] = x.file_count||0; });
+      TREE.push({level:1,type:'part',id:pt.id,partId:pt.id,projId:p.id,name:pt.name,file_count:pt.file_count||0,phase_count:pt.phase_count||0});
+      // 阶段：仅展示该零件实际拥有的阶段（由 part_phases 决定），不再强制显示全部模板阶段
+      const phases = pt.phases || [];
+      phases.forEach(ph=>{
+        const phaseFc = Object.keys(dtMap).filter(k=>k.startsWith(ph+'|')).reduce((s,k)=>s+(dtMap[k]||0),0);
+        TREE.push({level:2,type:'phase',projId:p.id,partId:pt.id,name:ph,phase:ph,file_count:phaseFc});
+        const dts=new Set();
+        const dtCtids={};
+        // 1) 该零件该阶段实际有文件的分类（即使模板已删也显示）
+        (pt.doc_types||[]).forEach(x=>{
+          if(x.phase===ph && x.doc_type!=null) dts.add(x.doc_type);
+        });
+        // 2) 该零件/项目的自定义分类（创建时从模板快照，或后续手工添加）
+        CURRENT.custom.forEach(c=>{
+          if(c.phase===ph && (c.project_id==p.id || c.project_id==null)){
+            if(!c.part_id || c.part_id==pt.id){
+              dts.add(c.doc_type);
+              dtCtids[c.doc_type]=c.id;
+            }
+          }
+        });
+        Array.from(dts).sort().forEach(dt=>{
+          const fc = dtMap[ph+'|'+dt]||0;
+          TREE.push({level:3,type:'doctype',projId:p.id,partId:pt.id,name:dt,phase:ph,ctid:dtCtids[dt]||'',file_count:fc});
+        });
+      });
+    });
+  });
+}
+
+function hasProjectAccess(projId){
+  const u=CURRENT.user;
+  if(u.role==='superAdmin') return true;
+  const r=CURRENT.roles && CURRENT.roles[String(projId)];
+  if(!r || !r.role_in_project) return false;
+  return true;
+}
+
+function isProjAdmin(projId){
+  const u=CURRENT.user;
+  if(u.role==='superAdmin') return true;
+  const role=CURRENT.roles && CURRENT.roles[String(projId)] && CURRENT.roles[String(projId)].role_in_project;
+  return role==='superAdmin'||role==='projectAdmin';
+}
+
+// 项目内容（零件图片概览图、零件信息卡）编辑权：
+// 项目管理员 或 本人在该项目任一文件夹被授予『可编辑』（与文档权限联动，只读人员仍只读）
+function canEditProjectContent(projId){
+  const u=CURRENT.user;
+  if(u.role==='superAdmin') return true;
+  const r=CURRENT.roles && CURRENT.roles[String(projId)];
+  if(!r) return false;
+  if(r.role_in_project==='superAdmin'||r.role_in_project==='projectAdmin') return true;
+  const folders=r.folders||{};
+  for(const k in folders){ if(folders[k]==='edit') return true; }
+  return false;
+}
+
+// 零件信息面板的编辑能力见 canEditProjectContent。
+
+function hasFolderAccess(projId, phase, docType){
+  const u=CURRENT.user;
+  if(u.role==='superAdmin') return true;
+  const r=CURRENT.roles && CURRENT.roles[String(projId)];
+  if(!r) return false;
+  const folders=r.folders || {};
+  // 阶段为 none 时，子文件夹强制不可访问
+  if(phase && folders[phase]==='none') return false;
+  const keys=[];
+  if(phase && docType) keys.push(phase+'|'+docType);
+  if(phase) keys.push(phase);
+  keys.push('');
+  for(const k of keys){
+    const v=folders[k];
+    if(v==='none') return false;
+    if(v==='read' || v==='edit') return true;
+  }
+  // 子文件夹无独立记录时继承阶段权限
+  if(phase && folders[phase]) return folders[phase] !== 'none';
+  // 无阶段记录时回退到项目级权限
+  return r.role_in_project==='superAdmin'||r.role_in_project==='projectAdmin';
+}
+
+function getFolderPerm(projId, phase, docType){
+  const u=CURRENT.user;
+  if(u.role==='superAdmin') return 'edit';
+  const r=CURRENT.roles && CURRENT.roles[String(projId)];
+  if(!r) return '';
+  const folders=r.folders||{};
+  // 阶段为 none 时，子文件夹强制无权限
+  if(phase && folders[phase]==='none') return '';
+  const keys=[];
+  if(phase && docType) keys.push(phase+'|'+docType);
+  if(phase) keys.push(phase);
+  keys.push('');
+  for(const k of keys){
+    const v=folders[k];
+    if(v==='none') return 'none';
+    if(v==='read'||v==='edit') return v;
+  }
+  // 子文件夹无独立记录时继承阶段权限
+  if(phase && folders[phase]) return folders[phase];
+  return (r.role_in_project==='superAdmin'||r.role_in_project==='projectAdmin') ? 'edit' : '';
+}
+
+let COLLAPSED={}; // TREE 索引 -> true，表示折叠
+function getTreeParent(i){
+  if(i<=0) return -1;
+  const lv=TREE[i].level;
+  if(lv===0) return -1;
+  for(let k=i-1;k>=0;k--){
+    if(TREE[k].level===lv-1) return k;
+  }
+  return -1;
+}
+function renderTree(){
+  const f=(document.getElementById('treeSearch').value||'').toLowerCase();
+  const wrap=document.getElementById('tree');
+  let html='';
+  let skipLevel=-1;
+  // 搜索可见性：自身匹配、匹配节点的祖先、匹配节点的子树 均显示
+  const selfMatch=new Array(TREE.length).fill(false);
+  const vis=new Array(TREE.length).fill(false);
+  if(f){
+    for(let i=0;i<TREE.length;i++){
+      selfMatch[i]=TREE[i].name.toLowerCase().indexOf(f)>=0;
+    }
+    for(let i=0;i<TREE.length;i++){
+      if(selfMatch[i]){
+        let p=i;
+        while(p>=0){ vis[p]=true; p=getTreeParent(p); }
+        let j=i+1;
+        while(j<TREE.length && TREE[j].level > TREE[i].level){ vis[j]=true; j++; }
+      }
+    }
+  } else {
+    vis.fill(true);
+  }
+  TREE.forEach((n,i)=>{
+    if(skipLevel>=0){
+      if(n.level>skipLevel) return;           // 仍在折叠子树内，跳过
+      skipLevel=-1;                            // 遇到同级或更高级节点，退出子树
+    }
+    if(f && !vis[i]) return;
+    const canAdmin=isProjAdmin(n.projId);
+    const hasAccess=hasProjectAccess(n.projId);
+    let dotClass='gray';
+    if(n.type==='project'){
+      if(!hasAccess) dotClass='gray';
+      else if(n.file_count>0) dotClass='green';
+      else if(n.part_count===0) dotClass='red';
+      else dotClass='orange';
+    } else if(n.type==='part'){
+      if(!hasAccess) dotClass='gray';
+      else if(n.file_count>0) dotClass='green';
+      else if(n.phase_count===0) dotClass='red';
+      else dotClass='orange';
+    } else if(n.type==='phase'){
+      // 阶段：按 folder_permissions 中 phase 级别判断
+      const canSee=hasFolderAccess(n.projId, n.name||'', '');
+      if(!canSee) dotClass='gray';
+      else if(n.file_count>0) dotClass='green';
+      else dotClass='red';
+    } else if(n.type==='doctype'){
+      // 文档类型：优先按 phase|docType，再按 phase 默认判断
+      const canSee=hasFolderAccess(n.projId, n.phase||'', n.name||'');
+      if(!canSee) dotClass='gray';
+      else if(n.file_count>0) dotClass='green';
+      else dotClass='red';
+    } else {
+      dotClass='gray';
+    }
+    const icon={project:'📁',part:'📦',phase:'📂',doctype:'📄'}[n.type];
+    let count='';
+    if(n.file_count!==undefined && n.file_count>0) count='<span class="count">'+n.file_count+'</span>';
+    const isParent=(n.type!=='doctype');
+    const collapsed=f ? false : (COLLAPSED[i]!==false); // 默认全部折叠；搜索时自动展开匹配节点
+    const toggle=isParent
+      ? '<span class="tn-toggle" onclick="toggleNode(event,'+i+')">▶</span>'
+      : '<span class="tn-toggle" style="visibility:hidden">▶</span>';
+    html+='<div class="tn lv'+n.level+(collapsed?' collapsed':'')+'" data-i="'+i+'" data-type="'+n.type+'" data-id="'+(n.id||'')+'" data-pid="'+n.projId+'" data-ptid="'+(n.partId||'')+'" data-phase="'+(n.phase||'')+'" data-name="'+esc(n.name)+'" data-ctid="'+(n.ctid||'')+'" data-hidden="'+(n.hidden?'1':'0')+'" onclick="selectNode(this)" oncontextmenu="showCtxMenu(event,this)">'
+        +toggle
+        +'<span class="status-dot '+dotClass+'"></span>'
+        +'<span class="icon">'+(n.type==='project'&&n.hidden?'🙈':icon)+'</span>'
+        +'<span class="label">'+esc(n.name)+'</span>'+count+'</div>';
+    if(collapsed && !f) skipLevel=n.level;      // 折叠时隐藏其子树（搜索时忽略折叠）
+  });
+  wrap.innerHTML=html||'<div class="empty">无匹配项</div>';
+}
+function toggleNode(e,idx){ e.stopPropagation(); const cur=(COLLAPSED[idx]===false?false:true); COLLAPSED[idx]=!cur; renderTree(); }
+
+/* 项目 / 零件 / 阶段 新建与删除 */
+function createProject(){
+  // 系统管理员或项目管理员可创建新项目；创建者默认成为该项目的项目管理员
+  const u=CURRENT.user||{};
+  if(u.role!=='superAdmin' && u.role!=='projectAdmin'){ toast('仅系统管理员或项目管理员可创建新项目',true); return; }
+  document.getElementById('newProjNo').value='';
+  document.getElementById('newProjParts').value='';
+  document.querySelectorAll('#projCreateMask .phase-check input').forEach(c=>c.checked=false);
+  updateProjPreview();
+  openModal('projCreateMask');
+}
+function togglePhaseGroup(group, checked){
+  const id = group==='tooling' ? 'phaseGroupTooling' : group==='dv' ? 'phaseGroupDv' : 'phaseGroupMp';
+  const wrap = document.getElementById(id);
+  if(!wrap) return;
+  wrap.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=checked);
+  updateProjPreview();
+}
+function updateProjPreview(){
+  const no=(document.getElementById('newProjNo').value||'').trim();
+  const parts=(document.getElementById('newProjParts').value||'').split('\n').map(s=>s.trim()).filter(Boolean);
+  const phases=Array.from(document.querySelectorAll('#projCreateMask .phase-check input:checked')).map(c=>c.value);
+  const box=document.getElementById('newProjPreview');
+  if(!no && !parts.length && !phases.length){ box.innerHTML='<div class="preview-empty">请先填写项目编号和零件名称</div>'; return; }
+  let html='<div class="root">📁 '+esc(no||'（未填写项目编号）')+'</div>';
+  if(!parts.length){ html+='<div class="part">（未填写零件）</div>'; }
+  else {
+    parts.forEach(p=>{
+      html+='<div class="part">📦 '+esc(p)+'</div>';
+      if(!phases.length){ html+='<div class="phase">（未选择阶段）</div>'; }
+      else { phases.forEach(ph=>{ html+='<div class="phase">📂 '+esc(ph)+'</div>'; }); }
+    });
+  }
+  box.innerHTML=html;
+}
+function saveNewProject(){
+  const project_no=(document.getElementById('newProjNo').value||'').trim();
+  const parts=(document.getElementById('newProjParts').value||'').split('\n').map(s=>s.trim()).filter(Boolean);
+  const phases=Array.from(document.querySelectorAll('#projCreateMask .phase-check input:checked')).map(c=>c.value);
+  if(!project_no){ toast('项目编号必填',true); return; }
+  if(!parts.length){ toast('至少需要填写一个零件名称',true); return; }
+  if(!phases.length){ toast('至少需要选择一个 NPI 阶段',true); return; }
+  api('/api/projects',{method:'POST',body:{project_no,parts,phases}}).then(r=>{
+    if(r.error) toast(r.error,true);
+    else { toast('项目已创建'); closeModal('projCreateMask'); loadTree(); }
+  });
+}
+function createPart(){
+  let pid=SEL.projId;
+  if(!pid){ toast('请先选择一个项目',true); return; }
+  if(!isProjAdmin(pid)){ toast('需要项目管理员权限',true); return; }
+  const projName=(TREE.find(n=>n.type==='project' && n.id==pid)||{}).name || ('项目#'+pid);
+  document.getElementById('newPartProj').value=projName;
+  document.getElementById('newPartName').value='';
+  loadPartPhaseOptions();
+  updatePartPreview();
+  openModal('partCreateMask');
+}
+function loadPartPhaseOptions(){
+  const wrap=document.getElementById('partPhaseList');
+  wrap.innerHTML='<div class="preview-empty" style="padding:10px">加载中...</div>';
+  api('/api/phase-templates').then(data=>{
+    if(data.error){ wrap.innerHTML='<div class="preview-empty" style="padding:10px;color:var(--red)">加载失败</div>'; return; }
+    const phases=Object.keys(data); // 后端已按 sort_order 排好序
+    if(!phases.length){ wrap.innerHTML='<div class="preview-empty" style="padding:10px">暂无阶段模板</div>'; return; }
+    // 按业务分组渲染，与截图一致：模具/治具 → 开发验证 → 其他
+    const groups=[
+      {title:'模具/治具阶段', list:['Tooling','Fixture']},
+      {title:'开发验证阶段（P1-PVT）', list:['P1','P2','EVT','DVT','PVT']},
+      {title:'量产阶段', list:['MP']},
+      {title:'其他阶段', list:[]}
+    ];
+    const used=new Set();
+    let html='';
+    groups.forEach(g=>{
+      let list=g.list.filter(ph=>phases.includes(ph));
+      if(g.title==='其他阶段'){
+        phases.forEach(ph=>{ if(!used.has(ph)) list.push(ph); });
+      }
+      if(!list.length) return;
+      list.forEach(ph=>used.add(ph));
+      html+='<div class="phase-sub-group" data-group="'+esc(g.title)+'" style="margin-bottom:12px">'
+        +'<div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:8px">'+esc(g.title)
+        +' <span class="link" onclick="togglePartPhaseGroup(\''+esc(g.title)+'\',true)">全选</span>'
+        +' <span class="link" onclick="togglePartPhaseGroup(\''+esc(g.title)+'\',false)">取消全选</span></div>'
+        +'<div style="display:flex;flex-wrap:wrap;gap:10px">'
+        +list.map(ph=>`<label class="phase-check"><input type="checkbox" value="${esc(ph)}" checked onchange="updatePartPreview()"> <span>${esc(ph)}</span></label>`).join('')
+        +'</div></div>';
+    });
+    wrap.innerHTML=html;
+    updatePartPreview();
+  }).catch(()=>{
+    wrap.innerHTML='<div class="preview-empty" style="padding:10px;color:var(--red)">加载失败</div>';
+  });
+}
+function toggleAllPartPhases(checked){
+  document.querySelectorAll('#partPhaseList input[type=checkbox]').forEach(c=>c.checked=checked);
+  updatePartPreview();
+}
+function togglePartPhaseGroup(title, checked){
+  const g=document.querySelector('#partPhaseList .phase-sub-group[data-group="'+CSS.escape(title)+'"]');
+  if(!g) return;
+  g.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=checked);
+  updatePartPreview();
+}
+function updatePartPreview(){
+  const raw=document.getElementById('newPartName').value||'';
+  const names=raw.split(/\n|\r/).map(s=>s.trim()).filter(Boolean);
+  const phases=Array.from(document.querySelectorAll('#partPhaseList .phase-check input:checked')).map(c=>c.value);
+  const box=document.getElementById('newPartPreview');
+  if(!names.length && !phases.length){ box.innerHTML='<div class="preview-empty">请输入零件名称并选择阶段</div>'; return; }
+  let html='';
+  if(!names.length){ html='<div class="root">📦 （未填写零件名称）</div>'; }
+  else {
+    names.slice(0,8).forEach(name=>{ html+='<div class="root">📦 '+esc(name)+'</div>'; });
+    if(names.length>8) html+='<div class="phase">… 还有 '+(names.length-8)+' 个零件</div>';
+  }
+  if(!phases.length){ html+='<div class="phase">（未选择阶段）</div>'; }
+  else { phases.forEach(ph=>{ html+='<div class="phase">📂 '+esc(ph)+'</div>'; }); }
+  box.innerHTML=html;
+}
+function saveNewPart(){
+  const raw=document.getElementById('newPartName').value||'';
+  const names=raw.split(/\n|\r/).map(s=>s.trim()).filter(Boolean);
+  if(!names.length){ toast('零件名称必填',true); return; }
+  if(names.length>50){ toast('一次最多创建 50 个零件',true); return; }
+  const phases=Array.from(document.querySelectorAll('#partPhaseList .phase-check input:checked')).map(c=>c.value);
+  if(!phases.length){ toast('请至少选择一个 NPI 阶段',true); return; }
+  const btn=document.querySelector('#partCreateMask .btn-primary');
+  if(btn){ btn.disabled=true; btn.textContent='创建中…'; }
+  api('/api/projects/'+SEL.projId+'/parts',{method:'POST',body:{names, phases}}).then(r=>{
+    if(btn){ btn.disabled=false; btn.textContent='确认创建'; }
+    if(r.error) toast(r.error,true); else { toast('已创建 '+r.created+' 个零件'); closeModal('partCreateMask'); loadTree(); }
+  });
+}
+function createPhase(){
+  let ptid=SEL.partId;
+  if(!ptid){ toast('请先选择一个零件',true); return; }
+  if(!isProjAdmin(SEL.projId)){ toast('需要项目管理员权限',true); return; }
+  const projName=(TREE.find(n=>n.type==='project' && n.id==SEL.projId)||{}).name || ('项目#'+SEL.projId);
+  const partName=(TREE.find(n=>n.type==='part' && n.id==ptid)||{}).name || ('零件#'+ptid);
+  document.getElementById('newPhaseParent').value=projName+' / '+partName;
+  // 重置：默认切回「模版」Tab，清空手动输入
+  setPhaseSrc('template');
+  const ta=document.getElementById('newPhaseNames'); if(ta) ta.value='';
+  loadPhaseTemplateOptions();
+  updatePhasePreview();
+  openModal('phaseCreateMask');
+}
+function setPhaseSrc(v){
+  const tabT=document.getElementById('phaseSrcTabTemplate');
+  const tabM=document.getElementById('phaseSrcTabManual');
+  const isTpl=(v==='template');
+  tabT.classList.toggle('active', isTpl);
+  tabM.classList.toggle('active', !isTpl);
+  document.getElementById('phaseSrcTemplate').style.display = isTpl ? '' : 'none';
+  document.getElementById('phaseSrcManual').style.display    = isTpl ? 'none' : '';
+  document.getElementById('phaseSrcHintTemplate').style.display = isTpl ? '' : 'none';
+  document.getElementById('phaseSrcHintManual').style.display   = isTpl ? 'none' : '';
+  updatePhasePreview();
+}
+function loadPhaseTemplateOptions(){
+  const wrap=document.getElementById('phaseTplList');
+  wrap.innerHTML='<div class="preview-empty" style="padding:14px">加载中...</div>';
+  api('/api/phase-templates').then(data=>{
+    if(data.error){ wrap.innerHTML='<div class="preview-empty" style="padding:14px;color:var(--red)">加载失败</div>'; return; }
+    const phases=Object.keys(data);
+    if(!phases.length){ wrap.innerHTML='<div class="preview-empty" style="padding:14px">暂无阶段模板，请先到「阶段模板」中配置</div>'; return; }
+    const groups=[
+      {title:'模具 / 治具阶段', list:['Tooling','Fixture']},
+      {title:'开发验证阶段（P1 → PVT）', list:['P1','P2','EVT','DVT','PVT']},
+      {title:'量产阶段', list:['MP']},
+      {title:'其他阶段', list:[]}
+    ];
+    const used=new Set();
+    let html='';
+    groups.forEach(g=>{
+      let list=g.list.filter(ph=>phases.includes(ph));
+      if(g.title==='其他阶段'){
+        phases.forEach(ph=>{ if(!used.has(ph)) list.push(ph); });
+      }
+      if(!list.length) return;
+      list.forEach(ph=>used.add(ph));
+      const subNames = list.reduce((acc,ph)=>acc.concat(data[ph]||[]), []);
+      const meta = list.length + ' 个可选 · 合计 ' + subNames.length + ' 个子文件夹';
+      html+='<div class="phase-group">'
+        +'<div class="phase-group-title"><span class="ic"></span>'+esc(g.title)
+        +'<span class="meta">'+meta+'</span></div>'
+        +'<div class="phase-pill-row">'
+        +list.map(ph=>{
+            const dts=data[ph]||[];
+            const sub=dts.length ? '<span class="sub-count">'+dts.length+'</span>' : '';
+            const tip = dts.length ? ' title="含 '+dts.length+' 个子文件夹：'+esc(dts.join('、'))+'"' : ' title="无预设子文件夹"';
+            const subs = dts.length ? String(dts.length) : '0';
+            const subAttr = dts.length ? dts.join('|').replace(/&/g,'&amp;').replace(/"/g,'&quot;') : '';
+            return '<span class="phase-pill" data-phase="'+esc(ph)+'" data-subcount="'+subs+'" data-subs="'+subAttr+'"'+tip+' onclick="togglePhasePill(this)"><span class="check">✓</span>'+esc(ph)+sub+'</span>';
+          }).join('')
+        +'</div></div>';
+    });
+    wrap.innerHTML=html;
+    updatePhasePreview();
+  }).catch(()=>{
+    wrap.innerHTML='<div class="preview-empty" style="padding:14px;color:var(--red)">加载失败</div>';
+  });
+}
+function togglePhasePill(el){
+  el.classList.toggle('checked');
+  updatePhasePreview();
+}
+function getSelectedPhases(){
+  const tabTpl=document.getElementById('phaseSrcTabTemplate');
+  if(!tabTpl.classList.contains('active')) return [];
+  return Array.from(document.querySelectorAll('#phaseTplList .phase-pill.checked')).map(el=>el.dataset.phase);
+}
+function updatePhasePreview(){
+  const phases=getSelectedPhases();
+  document.getElementById('phasePreviewCount').textContent=phases.length;
+  const list=document.getElementById('phasePreviewList');
+  if(!phases.length){
+    list.innerHTML='<span class="phase-preview-empty">尚未选择</span>';
+    return;
+  }
+  list.innerHTML = phases.map(ph=>{
+    const pill=document.querySelector('#phaseTplList .phase-pill[data-phase="'+CSS.escape(ph)+'"]');
+    const sub=pill ? parseInt(pill.dataset.subcount||'0',10) : 0;
+    const cls = sub>0 ? '' : 'muted';
+    const subTxt = sub>0 ? ' · '+sub+' 子文件夹' : ' · 无预设';
+    return '<span class="prev-tag '+cls+'">'+esc(ph)+'<span style="opacity:.7;font-size:10px">'+subTxt+'</span></span>';
+  }).join('');
+}
+function saveNewPhase(){
+  let phases=[];
+  const tabTpl=document.getElementById('phaseSrcTabTemplate');
+  if(tabTpl.classList.contains('active')){
+    phases=getSelectedPhases();
+    if(!phases.length){ toast('请至少选择一个 NPI 阶段',true); return; }
+  } else {
+    const ta=document.getElementById('newPhaseNames').value||'';
+    phases=ta.split(/\n|\r/).map(s=>s.trim()).filter(Boolean);
+    if(!phases.length){ toast('请输入至少一个阶段名称',true); return; }
+  }
+  const btn=document.querySelector('#phaseCreateMask .btn-primary');
+  if(btn){ btn.disabled=true; btn.textContent='创建中…'; }
+  api('/api/parts/'+SEL.partId+'/phases',{method:'POST',body:{phases}}).then(r=>{
+    if(btn){ btn.disabled=false; btn.textContent='确认创建'; }
+    if(r.error){ toast(r.error,true); return; }
+    const msg=(r.message && r.message!=='已创建 0 个阶段') ? r.message : ('阶段已创建：'+r.created.join('、'));
+    toast(msg);
+    closeModal('phaseCreateMask');
+    loadTree();
+  });
+}
+function deleteSelectedNode(){
+  const n=SEL;
+  if(n.type==='project' && n.projId){
+    if(!isProjAdmin(n.projId)){ toast('需要项目管理员权限',true); return; }
+    askConfirm('删除项目','确认删除该项目及其下所有零件、文件？此操作不可恢复。',()=>{
+      api('/api/projects/'+n.projId,{method:'DELETE'}).then(r=>{
+        if(r.error) toast(r.error,true); else { toast('项目已删除'); SEL={}; loadTree(); renderToolbar(); }
+      });
+    },'删除','btn-danger');
+  } else if(n.type==='part' && n.partId){
+    if(!isProjAdmin(n.projId)){ toast('需要项目管理员权限',true); return; }
+    askConfirm('删除零件','确认删除该零件及其下所有文件？此操作不可恢复。',()=>{
+      api('/api/parts/'+n.partId,{method:'DELETE'}).then(r=>{
+        if(r.error) toast(r.error,true); else { toast('零件已删除'); SEL={}; loadTree(); renderToolbar(); }
+      });
+    },'删除','btn-danger');
+  } else if(n.type==='phase' && n.phase){
+    if(!isProjAdmin(n.projId)){ toast('需要项目管理员权限',true); return; }
+    askConfirm('删除阶段','确认删除该阶段？',()=>{
+      api('/api/parts/'+n.partId+'/phases/'+encodeURIComponent(n.phase),{method:'DELETE'}).then(r=>{
+        if(r.error) toast(r.error,true); else { toast('阶段已删除'); loadTree(); }
+      });
+    },'删除','btn-danger');
+  } else if(n.type==='doctype' && n.phase){
+    if(!isProjAdmin(n.projId)){ toast('需要项目管理员权限',true); return; }
+    askConfirm('删除文件夹','确认删除该文件夹？该文件夹下的所有文件将被永久删除，且无法恢复。',()=>{
+      api('/api/custom-doc-types/delete',{
+        method:'POST',
+        body:{
+          project_id:+n.projId,
+          part_id:+n.partId||null,
+          phase:n.phase,
+          doc_type:n.docType||n.name
+        }
+      }).then(r=>{
+        if(r.error) toast(r.error,true); else { toast('文件夹已删除'); SEL={}; loadTree(); renderToolbar(); }
+      });
+    },'删除','btn-danger');
+  }
+}
+
+function esc(s){ return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function escAttr(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtTime(s){ if(!s) return ''; s=String(s); return s.length>16? s.slice(0,16): s; }
+
+let SEL={};
+function selectNode(el){
+  p3dDestroy();   // 切换节点时销毁上一零件的内联 3D 渲染，释放 WebGL 上下文
+  document.querySelectorAll('.tn').forEach(t=>t.classList.remove('selected'));
+  el.classList.add('selected');
+  const type=el.dataset.type;
+  SEL={projId:+el.dataset.pid, partId:el.dataset.ptid?+el.dataset.ptid:null, phase:el.dataset.phase||null, docType: type==='doctype'?el.dataset.name:null, ctid:el.dataset.ctid||'', name:el.dataset.name||'', type};
+  renderToolbar();
+  // 零件节点 → 在右侧渲染该零件的 3D 图面板（独立于普通文件区）
+  if(type==='part'){ renderPartOverview(); return; }
+  loadFiles();
+}
+
+function renderToolbar(){
+  const tb=document.getElementById('toolbar');
+  const proj=TREE.find(n=>n.projId===SEL.projId && n.type==='project');
+  let crumb='<div class="crumb-group"><span class="crumb-item" onclick="goRoot()">项目</span>';
+  if(proj) crumb+='<span class="crumb-sep">/</span><span class="crumb-item" onclick="selectByData('+SEL.projId+',\'project\')">'+esc(proj.name)+'</span>';
+  if(SEL.partId){ const pt=TREE.find(n=>n.id==SEL.partId); if(pt) crumb+='<span class="crumb-sep">/</span><span class="crumb-current">'+esc(pt.name)+'</span>'; }
+  if(SEL.phase) crumb+='<span class="crumb-sep">/</span><span class="crumb-current">'+esc(SEL.phase)+'</span>';
+  if(SEL.docType) crumb+='<span class="crumb-sep">/</span><span class="crumb-current">'+esc(SEL.docType)+'</span>';
+  crumb+='</div>';
+  const canAdmin=isProjAdmin(SEL.projId);
+  // 普通上传仅允许在「文档类型文件夹」节点执行（files.doc_type 为 NOT NULL，
+  // 阶段/项目/零件节点无具体文件夹归属，上传会失败）
+  // 零件 3D 图直接取该零件文件夹里的 3D 文件（STEP/IGES/STL/BREP）渲染，无需单独上传。
+  // 项目节点不展示概览图（项目级概览图已取消，直接进入文件列表）。
+  const folderPerm = getFolderPerm(SEL.projId, SEL.phase, SEL.docType);
+  const canUpload = (SEL.type==='doctype') && folderPerm==='edit';
+  const showDel=canAdmin && SEL.type;
+  tb.innerHTML=crumb
+    +'<span class="file-count" id="fc"></span>'
+    +'<div class="spacer"></div>'
+    +'<input type="text" id="fileSearch" placeholder="搜索文件名" oninput="loadFiles()">'
+    +(canUpload ? '<button class="btn btn-primary" onclick="openUpload()">+ 上传文件</button>' : '<button class="btn btn-primary" disabled title="'+(SEL.type==='doctype'?'该文件夹为只读，无上传权限':'请选择具体文档类型文件夹后再上传文件')+'">+ 上传文件</button>')
+    + (showDel?'<button class="btn btn-danger" onclick="deleteSelectedNode()">删除</button>':'');
+  const banner=document.getElementById('secBanner');
+  if(canAdmin) banner.textContent='● 当前项目您拥有管理权限';
+  else banner.textContent='● 一般用户视图，仅显示您有权限的文件';
+}
+
+function goRoot(){ p3dDestroy(); SEL={}; document.querySelectorAll('.tn').forEach(t=>t.classList.remove('selected')); renderToolbar(); document.getElementById('content').innerHTML='<div class="empty">请从左侧选择项目/零件/阶段查看文件</div>'; }
+function selectByData(id,type){ const el=document.querySelector('.tn[data-id="'+id+'"][data-type="'+type+'"]'); if(el) selectNode(el); }
+
+async function loadFiles(){
+  p3dDestroy();   // 进入文件视图时销毁内联 3D 渲染
+  const wrap=document.getElementById('content');
+  wrap.innerHTML='<div class="loading-box"><div class="spinner"></div>正在加载文件…</div>';
+  const q=new URLSearchParams();
+  if(SEL.projId) q.set('project_id',SEL.projId);
+  if(SEL.partId) q.set('part_id',SEL.partId);
+  if(SEL.phase) q.set('phase',SEL.phase);
+  if(SEL.docType) q.set('doc_type',SEL.docType);
+  const r=await api('/api/files?'+q.toString());
+  if(r.error){ toast(r.error,true); return; }
+  const kw=(document.getElementById('fileSearch').value||'').toLowerCase();
+  let list=r;
+  if(kw) list=list.filter(f=>f.original_name.toLowerCase().indexOf(kw)>=0);
+  const fc=document.getElementById('fc');
+  if(fc) fc.textContent=list.length+' 个文件';
+  if(!list.length){ wrap.innerHTML='<div class="empty">暂无文件，点击右上角「上传文件」</div>'; return; }
+  let html='<table class="files-tbl"><thead><tr><th>文件名</th><th>阶段</th><th>文件分类</th><th>上传人</th><th>上传时间</th><th>操作</th></tr></thead><tbody>';
+  const currentUid=(CURRENT.user||{}).uid;
+  const isAdmin=isProjAdmin(SEL.projId);
+  list.forEach(f=>{
+    const canDelete=isAdmin || f.uploader_id===currentUid;
+    html+='<tr><td class="file-name" title="'+esc(f.original_name)+'">'+esc(f.original_name)+'</td>'
+      +'<td title="'+esc(f.phase||'')+'">'+esc(f.phase||'')+'</td>'
+      +'<td title="'+esc(f.doc_type||'')+'">'+esc(f.doc_type||'')+'</td>'
+      +'<td>'+esc(f.uploader_name||f.uploader_id)+'</td>'
+      +'<td title="'+esc(f.uploaded_at||'')+'">'+fmtTime(f.uploaded_at)+'</td>'
+      +'<td><div class="file-actions">'
+      +'<button class="btn btn-sm" onclick="downloadFile('+f.id+')">下载</button>'
+      +(canDelete?'<button class="btn btn-sm btn-danger" onclick="delFile('+f.id+')">删除</button>':'')
+      +'</div></td></tr>';
+  });
+  html+='</tbody></table>';
+  wrap.innerHTML=html;
+}
+
+function openUpload(){
+  const inp=document.createElement('input'); inp.type='file'; inp.multiple=true;
+  inp.accept='.png,.jpg,.jpeg,.gif,.webp,.bmp,.pdf,.xlsx,.xls,.doc,.docx,.txt,.zip,.ppt,.pptx,.stp,.step,.dwg,.dxf,.igs,.iges,.catpart,.catproduct,.stl,.sldprt,.sldasm,.x_t,.x_b,.sat';
+  inp.onchange=async()=>{
+    const files=inp.files; if(!files.length) return;
+    const fd=new FormData();
+    for(const f of files) fd.append('file',f);
+    if(SEL.projId) fd.append('project_id',SEL.projId);
+    if(SEL.partId) fd.append('part_id',SEL.partId);
+    if(SEL.phase) fd.append('phase',SEL.phase);
+    if(SEL.docType) fd.append('doc_type',SEL.docType);
+    const r=await fetch('/api/upload',{method:'POST',body:fd,credentials:'same-origin'}).then(x=>x.json());
+    if(r.error){ toast(r.error,true); return; }
+    toast('已上传 '+r.count+' 个文件');
+    loadTree(); loadFiles();
+  };
+  inp.click();
+}
+function downloadFile(id){ window.open('/api/files/'+id+'/download','_blank'); }
+function delFile(id){
+  askConfirm('删除文件','确认删除该文件？删除后不可恢复。',()=>{
+    api('/api/files/'+id,{method:'DELETE'}).then(r=>{
+      if(r.error) toast(r.error,true);
+      else { toast('已删除'); loadTree(); loadFiles(); }
+    });
+  },'删除','btn-danger');
+}
+
+/* ---------- 系统管理 ---------- */
+const ADMIN_TABS=[
+  {key:'users',label:'用户管理',render:'renderUsers',role:'superAdmin'},
+  {key:'positions',label:'职位管理',render:'renderPositions',role:'superAdmin'},
+  {key:'projperms',label:'项目权限',render:'renderProjPerms'},
+  {key:'phasetmpl',label:'阶段模板',render:'renderPhaseTemplates',role:'superAdmin'},
+  {key:'audit',label:'审计日志',render:'renderAudit',role:'superAdmin'},
+  {key:'settings',label:'系统设置',render:'renderSettings',role:'superAdmin'},
+];
+
+function canAccessTab(tab){
+  const u=CURRENT.user;
+  if(!tab.role) return true;
+  if(tab.role==='superAdmin') return u.role==='superAdmin';
+  return false;
+}
+
+function openAdminTab(key){
+  CURRENT.adminMode=key;
+  renderAdminTabs();
+  const tab=ADMIN_TABS.find(t=>t.key===key);
+  if(tab && typeof window[tab.render]==='function') window[tab.render]();
+}
+
+function renderAdminTabs(){
+  const u=CURRENT.user;
+  const wrap=document.getElementById('adminTabs');
+  let html='';
+  ADMIN_TABS.forEach(tab=>{
+    if(!canAccessTab(tab)) return;
+    html+='<button class="modal-tab '+(CURRENT.adminMode===tab.key?'active':'')+'" onclick="openAdminTab(\''+tab.key+'\')">'+esc(tab.label)+'</button>';
+  });
+  wrap.innerHTML=html;
+}
+
+function openProjPerms(){ openModal('adminMask'); openAdminTab('projperms'); }
+function openUserMgmt(){ openModal('adminMask'); openAdminTab('users'); }
+function openAudit(){ openModal('adminMask'); openAdminTab('audit'); }
+function openPositions(){ openModal('adminMask'); openAdminTab('positions'); }
+function openPhaseTemplates(){ openModal('adminMask'); openAdminTab('phasetmpl'); }
+function openSettings(){ openModal('adminMask'); openAdminTab('settings'); }
+
+let PROJ_PERMS=[];
+async function renderProjPerms(){
+  const body=document.getElementById('adminBody');
+  body.innerHTML='<div class="admin-toolbar">'
+    +'<div class="proj-select-row"><label>选择项目</label><div class="custom-select"><select id="ppProj"></select></div></div>'
+    +'<div class="spacer"></div>'
+    +'<button class="btn btn-primary" onclick="openBatchForProj()">+ 授权用户</button>'
+    +'<button class="btn" onclick="loadProjPerms()">🔄 刷新</button></div>'
+    +'<div id="ppTable"></div>';
+  const sel=document.getElementById('ppProj');
+  CURRENT.projects.forEach(p=>{ const o=document.createElement('option'); o.value=p.id; o.textContent=p.project_no; sel.appendChild(o); });
+  sel.onchange=loadProjPerms;
+  loadProjPerms();
+}
+async function loadProjPerms(){
+  const pid=document.getElementById('ppProj').value;
+  const r=await api('/api/admin/project-permissions/'+pid);
+  if(r.error){ toast(r.error,true); return; }
+  PROJ_PERMS=r;
+  if(!r.length){ document.getElementById('ppTable').innerHTML='<div class="admin-empty">该项目暂无授权用户，点击「授权用户」添加。</div>'; return; }
+  let html='<table class="admin-tbl"><thead><tr><th>用户</th><th>项目角色</th><th>权限概要</th><th style="width:140px">操作</th></tr></thead><tbody>';
+  r.forEach(pm=>{
+    const roleTag = pm.roleInProject==='projectAdmin' ? '<span class="tag orange">项目管理员</span>' : '<span class="tag blue">一般用户</span>';
+    html+='<tr><td>'+esc(pm.userName)+' <span style="color:var(--t3)">('+esc(pm.userId)+')</span></td>'
+      +'<td><select onchange="changeRole('+pm.userId+',this.value)" style="padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--input-bg)">'
+      +'<option value="pd" '+(pm.roleInProject==='pd'?'selected':'')+'>一般用户</option>'
+      +'<option value="projectAdmin" '+(pm.roleInProject==='projectAdmin'?'selected':'')+'>项目管理员</option>'
+      +'</select></td>'
+      +'<td>'+esc(pm.phaseSummary)+'</td>'
+      +'<td><div class="actions">'
+      +'<button class="btn btn-sm" onclick="openPerm('+pid+',\''+pm.userId+'\',\''+esc(pm.userName)+'\',\''+pm.roleInProject+'\')">权限设置</button>'
+      +'<button class="btn btn-sm btn-danger" onclick="delPerm('+pid+',\''+pm.userId+'\')">删除</button></div></td></tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById('ppTable').innerHTML=html;
+}
+function changeRole(uid,role){ api('/api/admin/project-permissions/'+document.getElementById('ppProj').value+'/'+uid,{method:'PUT',body:{roleInProject:role}}).then(r=>{ if(r.error)toast(r.error,true); else toast('角色已更新'); }); }
+function delPerm(pid,uid){ askConfirm('撤销权限','确认撤销该用户的项目权限？',()=>{ api('/api/admin/project-permissions/'+pid+'/'+uid,{method:'DELETE'}).then(r=>{ if(r.error)toast(r.error,true); else {toast('已撤销');loadProjPerms();} }); },'撤销','btn-danger'); }
+async function openBatchForProj(){
+  await buildBatch();
+  const currentPid=document.getElementById('ppProj').value;
+  document.querySelectorAll('#batchProjList input').forEach(cb=>{ cb.checked=(cb.value===currentPid); });
+  updateBatchHint('batchProjList','batchProjHint','个项目');
+  renderBatchPermPanel();
+  openModal('batchMask');
+}
+async function openPerm(pid,uid,uname,role){ CURRENT.fp={pid,uid,uname,role}; CURRENT.fpExpanded={}; const r=await api('/api/admin/project-permissions/'+pid+'/'+uid+'/folder-tree'); if(r.error){toast(r.error,true);return;} CURRENT.fpTree=r; renderPermTree(); openModal('permMask'); }
+function renderPermTree(){
+  const t=CURRENT.fpTree; const role=CURRENT.fp.role||'pd';
+  let html='<div class="perm-info"><span>用户：</span><strong>'+esc(CURRENT.fp.uname)+' ('+esc(CURRENT.fp.uid)+')</strong></div>';
+  const isAdmin = role==='projectAdmin';
+  html+='<div class="perm-role-row"><label>项目角色</label><div class="custom-select"><select id="permRole" onchange="onPermRoleChange()">'
+    +'<option value="pd" '+(role==='pd'?'selected':'')+'>一般用户</option>'
+    +'<option value="projectAdmin" '+(isAdmin?'selected':'')+'>项目管理员</option>'
+    +'</select></div></div>';
+  if(isAdmin){
+    html+='<div class="perm-admin-hint">项目管理员默认拥有该项目全部文件夹的可编辑权限，无需逐项设置。</div>';
+  }
+  html+='<div class="perm-btns" id="permBtns">'
+    +'<button class="btn btn-success btn-sm" onclick="setPermAll(\'edit\')">全部设为可编辑</button>'
+    +'<button class="btn btn-primary btn-sm" onclick="setPermAll(\'read\')">全部设为只读</button>'
+    +'<button class="btn btn-danger btn-sm" onclick="setPermAll(\'none\')">全部设为无权限</button>'
+    +'</div>';
+  html+='<div class="perm-tree" id="permTree">';
+  const selDisabled = isAdmin ? ' disabled' : '';
+  html+='<div class="perm-node root"><span class="perm-icon">📁</span><span class="perm-label">'+esc(t.projectNo)+'</span><select class="perm-sel" id="perm_root"'+selDisabled+'>'+permOpts(isAdmin?'edit':t.permission,true)+'</select></div>';
+  html+='<div class="perm-hint">点击阶段可展开/折叠子文件夹；子文件夹未设置时继承阶段权限。</div>';
+  (t.phases||[]).forEach(ph=>{
+    const expanded = CURRENT.fpExpanded[ph.phase] === true;
+    const hasKids = (ph.docTypes||[]).length > 0;
+    html+='<div class="perm-node phase" data-phase="'+esc(ph.phase)+'" onclick="togglePermPhase(\''+esc(ph.phase)+'\')">'
+      +'<span class="perm-toggle '+(hasKids?'':'empty')+(expanded?'':' collapsed')+'" onclick="event.stopPropagation();togglePermPhase(\''+esc(ph.phase)+'\')">▾</span>'
+      +'<span class="perm-icon">📂</span><span class="perm-label">'+esc(ph.phase)+'</span>'
+      +'<select class="perm-sel" data-phase="'+esc(ph.phase)+'" onclick="event.stopPropagation()" onchange="onPermPhaseChange(\''+esc(ph.phase)+'\')"'+selDisabled+'>'+permOpts(isAdmin?'edit':ph.permission,false)+'</select>'
+      +'</div>';
+    if(hasKids){
+      html+='<div class="perm-children '+(expanded?'':'hidden')+'" id="permChildren_'+esc(ph.phase)+'">';
+      ph.docTypes.forEach(dt=>{
+        html+='<div class="perm-node doctype" data-phase="'+esc(ph.phase)+'" data-dt="'+esc(dt.docType)+'">'
+          +'<span class="perm-toggle empty"></span><span class="perm-icon">📄</span>'
+          +'<span class="perm-label">'+esc(dt.docType)+'</span>'
+          +'<select class="perm-sel" data-phase="'+esc(ph.phase)+'" data-dt="'+esc(dt.docType)+'" onclick="event.stopPropagation()"'+selDisabled+'>'+permOpts(isAdmin?'edit':dt.permission,false)+'</select>'
+          +'</div>';
+      });
+      html+='</div>';
+    }
+  });
+  html+='</div>';
+  document.getElementById('permBody').innerHTML=html;
+  onPermRoleChange();
+}
+function permOpts(v,isRoot){
+  const opts=isRoot
+    ? [['','(不设，按阶段)'],['edit','可编辑'],['read','只读'],['none','无权限']]
+    : [['','继承'],['edit','可编辑'],['read','只读'],['none','无权限']];
+  return opts.map(o=>'<option value="'+o[0]+'" '+(o[0]===v?'selected':'')+'>'+o[1]+'</option>').join('');
+}
+function togglePermPhase(ph){
+  const was=CURRENT.fpExpanded[ph]===true;
+  CURRENT.fpExpanded[ph]=!was;
+  const kids=document.getElementById('permChildren_'+ph);
+  const toggle=document.querySelector('.perm-node.phase[data-phase="'+ph+'"] .perm-toggle');
+  if(kids){ kids.classList.toggle('hidden',was); }
+  if(toggle){ toggle.classList.toggle('collapsed',was); }
+}
+function setPermAll(val){
+  document.getElementById('perm_root').value=val;
+  document.querySelectorAll('#permBody .perm-sel').forEach(sel=>sel.value=val);
+}
+function onPermPhaseChange(ph){
+  // 阶段权限变化时，子文件夹默认继承阶段权限（清空为继承）。
+  // 如需单独授权，可在阶段设好后再展开单独调整。
+  document.querySelectorAll('.perm-node.doctype[data-phase="'+ph+'"] .perm-sel').forEach(kid=>{
+    kid.value='';
+  });
+}
+function onPermRoleChange(){
+  const role=document.getElementById('permRole').value;
+  const isAdmin=role==='projectAdmin';
+  // 项目管理员：全部设为可编辑并禁用；一般用户：保持当前值并启用
+  document.querySelectorAll('#permBody .perm-sel').forEach(sel=>{
+    sel.disabled=isAdmin;
+    if(isAdmin) sel.value='edit';
+  });
+  const btns=document.getElementById('permBtns');
+  if(btns) btns.style.display=isAdmin?'none':'flex';
+  const tree=document.getElementById('permTree');
+  if(tree) tree.classList.toggle('perm-admin',isAdmin);
+}
+function savePerm(){
+  const pid=CURRENT.fp.pid, uid=CURRENT.fp.uid;
+  const role=document.getElementById('permRole').value;
+  // 严格按照用户当前选择的值保存；阶段与子文件夹可独立组合授权
+  const entries=[];
+  const root=document.getElementById('perm_root').value;
+  if(root) entries.push({phase:null,permission:root});
+  document.querySelectorAll('#permBody .perm-node.phase .perm-sel[data-phase]').forEach(sel=>{
+    const v=sel.value; if(!v) return;
+    entries.push({phase:sel.dataset.phase, docType:null, permission:v});
+  });
+  document.querySelectorAll('#permBody .perm-node.doctype .perm-sel[data-dt]').forEach(sel=>{
+    const v=sel.value; if(!v) return;
+    entries.push({phase:sel.dataset.phase, docType:sel.dataset.dt, permission:v});
+  });
+  api('/api/admin/project-permissions/'+pid+'/'+uid,{method:'PUT',body:{roleInProject:role}}).then(r1=>{
+    if(r1.error){ toast(r1.error,true); return; }
+    api('/api/admin/project-permissions/'+pid+'/'+uid+'/folder-tree',{method:'PUT',body:{entries}}).then(r2=>{
+      if(r2.error) toast(r2.error,true);
+      else { toast('权限已保存'); closeModal('permMask'); loadProjPerms(); }
+    });
+  });
+}
+
+/* ---------- 批量授权 ---------- */
+function buildBatch(){
+  // 每次打开批量授权弹窗重置「按职位分组的矩阵覆盖集」
+  BATCH_POS_PERM={}; BATCH_CUR_POS='';
+  const p1 = api('/api/projects').then(ps=>{
+    const box=document.getElementById('batchProjList'); box.innerHTML='';
+    (ps||[]).forEach(p=>{
+      const item=document.createElement('label'); item.className='batch-check-item'; item.dataset.search=p.project_no.toLowerCase();
+      item.innerHTML='<input type="checkbox" value="'+p.id+'"> <span>'+esc(p.project_no)+'</span>';
+      item.querySelector('input').onchange=()=>{ updateBatchHint('batchProjList','batchProjHint','个项目'); renderBatchPermPanel(); };
+      box.appendChild(item);
+    });
+    updateBatchHint('batchProjList','batchProjHint','个项目');
+    filterBatchItems('batchProjList','batchProjFilter');
+  });
+  const p2 = api('/api/users/all').then(us=>{
+    const box=document.getElementById('batchUserList'); box.innerHTML='';
+    const posMap={}; // name -> count
+    (us||[]).forEach(u=>{
+      if(u.role==='superAdmin' || u.role==='projectAdmin') return; // 管理员无需批量授权
+      const posName=(u.position_name||u.dept||'未设置职位').trim();
+      const item=document.createElement('label');
+      item.className='batch-check-item';
+      item.dataset.search=((u.name||'')+' '+(u.uid||'')+' '+posName).toLowerCase();
+      item.dataset.position=posName.toLowerCase();
+      item.dataset.positionRaw=posName;
+      item.innerHTML='<input type="checkbox" value="'+esc(u.uid)+'"> <span>'+esc(u.name)+' ('+esc(u.uid)+') <span style="color:var(--t3);font-size:11px">['+esc(posName)+']</span></span>';
+      item.querySelector('input').onchange=()=>{
+        updateBatchHint('batchUserList','batchUserHint','个用户');
+      };
+      box.appendChild(item);
+      posMap[posName]=(posMap[posName]||0)+1;
+    });
+    buildBatchPosBar(posMap);
+    updateBatchHint('batchUserList','batchUserHint','个用户');
+    filterBatchItems('batchUserList','batchUserFilter');
+  });
+  return Promise.all([p1,p2]);
+}
+function buildBatchPosBar(posMap){
+  const bar=document.getElementById('batchUserPosBar');
+  const names=Object.keys(posMap).sort();
+  if(!names.length){ bar.style.display='none'; return; }
+  bar.style.display='flex';
+  let h='<span style="font-size:12px;color:var(--t3)">按职位：</span>'
+      +'<button class="btn btn-xs batch-pos-btn active" data-pos="" onclick="filterBatchByPos(this)\">全部</button>';
+  names.forEach(name=>{
+    h+='<button class="btn btn-xs batch-pos-btn" data-pos="'+escAttr(name.toLowerCase())+'" onclick="filterBatchByPos(this)">'+esc(name)+' ('+posMap[name]+')</button>';
+  });
+  bar.innerHTML=h;
+}
+function filterBatchByPos(btn){
+  const pos=(btn.dataset.pos||'').toLowerCase();
+  document.querySelectorAll('#batchUserPosBar .batch-pos-btn').forEach(b=>b.classList.toggle('active', b===btn));
+  // 切标签前先保存当前职位下手动改过的覆盖项，再加载目标职位自己的覆盖集。
+  // 这样「PD 标签下改 Fixture 只读」只作用于 PD 用户，切到 PQE 时矩阵是 PQE 自己的设置。
+  _saveCurPosPerms();
+  BATCH_CUR_POS=pos;
+  const box=document.getElementById('batchUserList');
+  const q=(document.getElementById('batchUserFilter').value||'').trim().toLowerCase();
+  Array.from(box.children).forEach(item=>{
+    const text=item.dataset.search||'';
+    const matchText= !q || text.indexOf(q)!==-1;
+    const matchPos= !pos || item.dataset.position===pos;
+    item.classList.toggle('hidden', !(matchText && matchPos));
+  });
+  _loadPosPerms(pos);
+}
+function filterBatchItems(listId, inputId){
+  const box=document.getElementById(listId), inp=document.getElementById(inputId);
+  const q=(inp.value||'').trim().toLowerCase();
+  if(listId==='batchUserList'){
+    const activeBtn=document.querySelector('#batchUserPosBar .batch-pos-btn.active');
+    const pos=activeBtn?activeBtn.dataset.pos:'';
+    Array.from(box.children).forEach(item=>{
+      const text=item.dataset.search||'';
+      const matchText= !q || text.indexOf(q)!==-1;
+      const matchPos= !pos || item.dataset.position===pos;
+      item.classList.toggle('hidden', !(matchText && matchPos));
+    });
+  }else{
+    Array.from(box.children).forEach(item=>{
+      const text=item.dataset.search||'';
+      item.classList.toggle('hidden', q && text.indexOf(q)===-1);
+    });
+  }
+}
+function batchSelectAllVisibleUsers(select){
+  const box=document.getElementById('batchUserList');
+  Array.from(box.children).forEach(item=>{
+    if(item.classList.contains('hidden')) return;
+    item.querySelector('input').checked=select;
+  });
+  updateBatchHint('batchUserList','batchUserHint','个用户');
+}
+function updateBatchHint(listId, hintId, unit){
+  const n=document.querySelectorAll('#'+listId+' input:checked').length;
+  document.getElementById(hintId).textContent='已选择 '+n+' '+unit;
+}
+function saveBatch(){
+  const pids=Array.from(document.querySelectorAll('#batchProjList input:checked')).map(cb=>cb.value);
+  const uids=Array.from(document.querySelectorAll('#batchUserList input:checked')).map(cb=>cb.value);
+  const role=document.getElementById('batchRole').value;
+  if(!pids.length||!uids.length){ toast('请选择项目和用户',true); return; }
+  // 多职位混勾时，按每位用户自身职位分别赋权限：PD→edit，PQE/生产模修→read，其他默认 read
+  const userPerms={}, userPos={};
+  document.querySelectorAll('#batchUserList input:checked').forEach(cb=>{
+    const item=cb.closest('.batch-check-item');
+    if(!item) return;
+    const raw=item.dataset.positionRaw||'';
+    userPerms[cb.value]=_initPermForPos(raw);
+    userPos[cb.value]=_posKeyOf(raw);
+  });
+  // 矩阵覆盖按职位分组提交：每位用户只套用「自己职位」那一套手动覆盖（无则用「全部」标签下的通用覆盖）
+  _saveCurPosPerms();
+  const posEntries={};
+  Object.keys(BATCH_POS_PERM).forEach(pk=>{
+    const m=BATCH_POS_PERM[pk]; const arr=[];
+    Object.keys(m).forEach(k=>{
+      const v=m[k]; if(!v) return;
+      const i=k.indexOf('|');
+      const phase=k.slice(0,i), dt=k.slice(i+1);
+      arr.push({phase: phase||null, docType: dt||null, permission:v});
+    });
+    if(arr.length) posEntries[pk]=arr;
+  });
+  _doSaveBatch(pids,uids,role,[],false,userPerms,userPos,posEntries);
+}
+function _doSaveBatch(pids,uids,role,entries,overwrite,userPerms,userPos,posEntries){
+  const body={projectIds:pids,userIds:uids,role,entries,overwrite};
+  if(userPerms && Object.keys(userPerms).length) body.userPerms=userPerms;
+  if(userPos && Object.keys(userPos).length) body.userPos=userPos;
+  if(posEntries && Object.keys(posEntries).length) body.posEntries=posEntries;
+  api('/api/permissions/batch',{method:'POST',body}).then(r=>{
+    if(r.existing && r.existing.length && !overwrite){
+      const rows=r.existing.map(e=>'<tr><td>'+esc(e.projectNo)+'</td><td>'+esc(e.userName)+'</td><td>'+esc(e.userId)+'</td></tr>').join('');
+      const body='<div class="confirm-warn"><span class="icon">&#9888;</span><div>这些项目与用户的授权关系已经存在，确认覆盖后将以当前设置替换原有权限。</div></div>'+
+                 '<div class="confirm-count">共 '+r.existing.length+' 条已存在授权</div>'+
+                 '<div class="confirm-list"><table class="confirm-table"><thead><tr><th>项目编号</th><th>用户姓名</th><th>工号</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+      askConfirm('覆盖已有授权', body, ()=>_doSaveBatch(pids,uids,role,entries,true,userPerms), '确认覆盖', 'btn-danger', 'wide');
+      return;
+    }
+    if(r.error){ toast(r.error,true); return; }
+    toast('批量授权成功，共'+r.granted+'组');
+    closeModal('batchMask');
+    renderProjPerms();
+  });
+}
+
+async function renderBatchPermPanel(){
+  const panel=document.getElementById('batchPermPanel');
+  if(!panel) return;
+  const role=document.getElementById('batchRole').value;
+  if(role==='projectAdmin'){
+    panel.innerHTML='<div class="batch-perm-admin-hint">项目管理员默认拥有全部阶段/文档类型的可编辑权限，无需逐项设置。</div>';
+    return;
+  }
+  const checked=document.querySelectorAll('#batchProjList input:checked');
+  const pids=Array.from(checked).map(cb=>cb.value);
+  if(!pids.length){
+    panel.innerHTML='<div class="batch-perm-loading">请选择项目以加载其实际阶段</div>';
+    return;
+  }
+  panel.innerHTML='<div class="batch-perm-loading">正在加载项目阶段…</div>';
+  let tpl={};
+  if(pids.length===1){
+    tpl=await api('/api/projects/'+pids[0]+'/phase-tree');
+  }else{
+    // 多项目取阶段并集
+    const trees=await Promise.all(pids.map(pid=>api('/api/projects/'+pid+'/phase-tree')));
+    trees.forEach(tree=>{
+      Object.entries(tree||{}).forEach(([ph,dts])=>{
+        if(!tpl[ph]) tpl[ph]=[];
+        (dts||[]).forEach(dt=>{ if(!tpl[ph].includes(dt)) tpl[ph].push(dt); });
+      });
+    });
+  }
+  _renderBatchPermTree(tpl||{});
+}
+function _renderBatchPermTree(tpl){
+  const panel=document.getElementById('batchPermPanel');
+  const role=document.getElementById('batchRole').value;
+  if(role==='projectAdmin'){
+    panel.innerHTML='<div class="batch-perm-admin-hint">项目管理员默认拥有全部阶段/文档类型的可编辑权限，无需逐项设置。</div>';
+    return;
+  }
+  let h='<div class="batch-perm-btns">'
+    +'<button class="btn btn-success btn-xs" onclick="setBatchPermAll(\'edit\')">全部可编辑</button>'
+    +'<button class="btn btn-primary btn-xs" onclick="setBatchPermAll(\'read\')">全部只读</button>'
+    +'<button class="btn btn-danger btn-xs" onclick="setBatchPermAll(\'none\')">全部无权限</button>'
+    +'</div>';
+  h+='<div class="batch-perm-row root"><span class="batch-perm-label"><span class="perm-icon">📁</span>项目根目录</span>'
+    +'<select class="batch-perm-sel" data-phase="" data-dt="" onchange="markBatchTouched(this);onBatchPermRootChange()">'+batchPermOpts('')+'</select></div>';
+  const phases=Object.keys(tpl);
+  if(!phases.length){
+    h+='<div style="font-size:12px;color:var(--t3);padding:10px 0">暂无阶段/文档类型模板</div>';
+  }else{
+    phases.forEach(ph=>{
+      const dts=tpl[ph]||[];
+      h+='<div class="batch-perm-row phase" data-phase="'+escAttr(ph)+'">'
+        +'<span class="batch-perm-toggle" onclick="toggleBatchPermPhase(\''+escAttr(ph)+'\',this)">▶</span>'
+        +'<span class="batch-perm-label"><span class="perm-icon">📂</span>'+esc(ph)+'</span>'
+        +'<select class="batch-perm-sel" data-phase="'+escAttr(ph)+'" data-dt="" onchange="markBatchTouched(this);onBatchPermPhaseChange(\''+escAttr(ph)+'\')">'+batchPermOpts('')+'</select></div>';
+      (dts||[]).forEach(dt=>{
+        h+='<div class="batch-perm-row doctype batch-perm-child hidden" data-phase="'+escAttr(ph)+'" data-dt="'+escAttr(dt)+'"><span class="batch-perm-label"><span class="perm-icon">📄</span>'+esc(dt)+'</span>'
+          +'<select class="batch-perm-sel" data-phase="'+escAttr(ph)+'" data-dt="'+escAttr(dt)+'" onchange="markBatchTouched(this)">'+batchPermOpts('')+'</select></div>';
+      });
+    });
+  }
+  panel.innerHTML=h;
+  // 矩阵是覆盖语义：先按每位用户职位（PD→可编辑、PQE/生产模修→只读、其他默认只读）填默认值，
+  // 再用这里被改过的 select 作为覆盖。空白=继承，不参与覆盖。
+  const tip=document.createElement('div');
+  tip.className='batch-perm-tip';
+  tip.style.cssText='font-size:11px;color:var(--t3);margin-top:10px;padding-top:8px;border-top:1px dashed var(--border)';
+  tip.innerHTML='💡 授权前矩阵已按当前筛选职位自动预览（PD→可编辑、PQE/生产模修→只读），<strong>只有你手动改过的项</strong>才会作为覆盖提交；切到「全部」不预填，每位用户按自身职位授权。';
+  panel.appendChild(tip);
+  // 当前筛选职位的矩阵预览默认值（按切换的职位自动填可编辑/只读，仅作视觉提示）
+  const activeBtn=document.querySelector('#batchUserPosBar .batch-pos-btn.active');
+  applyBatchPermFilterPreset(activeBtn?(activeBtn.dataset.pos||''):'');
+}
+function applyBatchPermFilterPreset(pos){
+  // 职位筛选的矩阵预填（视觉辅助）：
+  //  - 筛选到具体职位（PD/PQE/生产模修）→ 把未手动改的项预填该职位默认值
+  //  - 「全部」→ 不预填具体值，矩阵归零为「继承」，此时授权完全按每位用户自身职位
+  // 预填只设 value 不触发 onchange、不标 dirty，不会作为覆盖项提交；
+  // 用户已手动改过（dirty）的项保持原值，不被预填覆盖。
+  pos=(pos||'').toLowerCase();
+  const panel=document.getElementById('batchPermPanel');
+  if(!panel) return;
+  let val=null;
+  if(pos==='pd') val='edit';
+  else if(pos==='pqe' || pos.includes('pqe') || pos.includes('生产模修') || pos.includes('模修')) val='read';
+  const rootSel=document.querySelector('#batchPermPanel .batch-perm-row.root .batch-perm-sel');
+  if(rootSel && rootSel.dataset.dirty!=='1') rootSel.value = (val===null?'':val);
+  if(val===null){
+    // 「全部」：所有未手动改的下拉清成「继承」，避免视觉残留误导
+    document.querySelectorAll('#batchPermPanel .batch-perm-sel').forEach(sel=>{
+      if(sel.dataset.dirty!=='1') sel.value='';
+    });
+    // 手动改过（dirty）的阶段，其未 dirty 子项跟随阶段值显示，保持视觉级联一致
+    document.querySelectorAll('#batchPermPanel .batch-perm-row.phase .batch-perm-sel').forEach(sel=>{
+      if(sel.dataset.dirty==='1'&&sel.dataset.phase) onBatchPermPhaseChange(sel.dataset.phase);
+    });
+    return;
+  }
+  document.querySelectorAll('#batchPermPanel .batch-perm-row.phase').forEach(row=>{
+    const sel=row.querySelector('.batch-perm-sel');
+    if(sel && sel.dataset.dirty!=='1') sel.value = val;
+    const ph=row.dataset.phase;
+    if(ph) onBatchPermPhaseChange(ph);
+  });
+}
+function _initPermForPos(rawPos){
+  // 按用户职位名推断批量授权的初始权限：PD→可编辑，PQE/生产模修→只读，其他默认只读
+  const p=(rawPos||'').trim();
+  if(!p) return 'read';
+  const lp=p.toLowerCase();
+  if(lp==='pd') return 'edit';
+  if(lp==='pqe' || p.includes('生产模修') || p.includes('模修')) return 'read';
+  return 'read';
+}
+function _posKeyOf(rawPos){ return String(rawPos||'').trim().toLowerCase(); }
+function _batchPermKey(sel){
+  // 覆盖集 key：根='|'，阶段='阶段名|'，子文件夹='阶段名|子文件夹'
+  return (sel.dataset.phase||'')+'|'+(sel.dataset.dt||'');
+}
+function _saveCurPosPerms(){
+  // 把当前面板里手动改过(dirty)的项保存进当前职位的覆盖集
+  const panel=document.getElementById('batchPermPanel');
+  if(!panel) return;
+  const m={};
+  panel.querySelectorAll('.batch-perm-sel').forEach(sel=>{
+    if(sel.dataset.dirty!=='1') return;
+    m[_batchPermKey(sel)]=sel.value;
+  });
+  if(Object.keys(m).length) BATCH_POS_PERM[BATCH_CUR_POS]=m;
+  else delete BATCH_POS_PERM[BATCH_CUR_POS];
+}
+function _loadPosPerms(posKey){
+  // 加载某职位的覆盖集；该职位没手改过则回到「按职位预填」的视觉预览
+  const panel=document.getElementById('batchPermPanel');
+  if(!panel) return;
+  panel.querySelectorAll('.batch-perm-sel').forEach(sel=>{ delete sel.dataset.dirty; });
+  const m=BATCH_POS_PERM[posKey];
+  if(m && Object.keys(m).length){
+    panel.querySelectorAll('.batch-perm-sel').forEach(sel=>{
+      const k=_batchPermKey(sel);
+      if(k in m){ sel.value=m[k]; sel.dataset.dirty='1'; }
+    });
+    return;
+  }
+  applyBatchPermFilterPreset(posKey);
+}
+function markBatchTouched(sel){
+  // 用户手动改过该 select —— 该值才会作为覆盖项提交；
+  // 职位切换时的自动预填（applyBatchPermFilterPreset）只设 value 不触发 onchange，不会标记 dirty
+  if(sel) sel.dataset.dirty='1';
+}
+function batchPermOpts(v){
+  return [['','继承'],['edit','可编辑'],['read','只读'],['none','无权限']].map(o=>'<option value="'+o[0]+'" '+(o[0]===v?'selected':'')+'>'+o[1]+'</option>').join('');
+}
+function setBatchPermAll(val){
+  // 「全部可编辑/只读/无权限」= 对根和所有阶段批量设值并标 dirty；
+  // 子项跟随阶段值但**不标 dirty**，确保后续单独修改某个阶段时子项能继续级联覆盖。
+  const rootSel=document.querySelector('#batchPermPanel .batch-perm-row.root .batch-perm-sel');
+  if(rootSel){ rootSel.value=val; rootSel.dataset.dirty='1'; }
+  document.querySelectorAll('#batchPermPanel .batch-perm-row.phase').forEach(row=>{
+    const sel=row.querySelector('.batch-perm-sel');
+    if(sel){ sel.value=val; sel.dataset.dirty='1'; }
+    const ph=row.dataset.phase;
+    if(ph) onBatchPermPhaseChange(ph);
+  });
+}
+function onBatchPermRootChange(){
+  const rootSel=document.querySelector('#batchPermPanel .batch-perm-row.root .batch-perm-sel');
+  if(!rootSel||!rootSel.value) return;
+  document.querySelectorAll('#batchPermPanel .batch-perm-row.phase .batch-perm-sel').forEach(sel=>{
+    if(sel.dataset.dirty!=='1'){ sel.value=rootSel.value; onBatchPermPhaseChange(sel.dataset.phase); }
+  });
+}
+function onBatchPermPhaseChange(ph){
+  const phaseSel=document.querySelector('#batchPermPanel .batch-perm-row.phase[data-phase="'+escAttr(ph)+'"] .batch-perm-sel');
+  if(!phaseSel) return;
+  const val=phaseSel.value;
+  // 未被用户手动改过的子文件夹视觉跟随阶段值（含改回「继承」时清回继承）；
+  // 跟随项不标 dirty，提交时仅阶段级覆盖，由后端级联落库
+  document.querySelectorAll('#batchPermPanel .batch-perm-row.doctype[data-phase="'+escAttr(ph)+'"] .batch-perm-sel').forEach(sel=>{ if(sel.dataset.dirty!=='1') sel.value=val; });
+}
+function toggleBatchPermPhase(ph, el){
+  const expanded = el.textContent === '▼';
+  el.textContent = expanded ? '▶' : '▼';
+  document.querySelectorAll('#batchPermPanel .batch-perm-row.doctype[data-phase="'+escAttr(ph)+'"]').forEach(row=>{
+    row.classList.toggle('hidden', expanded);
+  });
+}
+/* ==================== 零件 3D 图预览 ==================== */
+/* three.js 按需加载：只有打开 3D 弹窗时才拉取，不影响主界面首屏 */
+let M3D = {loaded:false, loading:false, renderer:null, scene:null, camera:null,
+           controls:null, model:null, grid:null, wire:false, curId:null};
+
+function m3dEnsureThree(){
+  return new Promise((resolve, reject)=>{
+    if(M3D.loaded) return resolve(true);
+    if(M3D.loading) { // 已在加载，轮询等待
+      let t=0; const iv=setInterval(()=>{
+        if(M3D.loaded){ clearInterval(iv); resolve(true); }
+        else if((t+=200)>20000){ clearInterval(iv); reject(new Error('three.js 加载超时')); }
+      },200);
+      return;
+    }
+    M3D.loading=true;
+    const files=['/static/vendor/three/three.min.js',
+                 '/static/vendor/three/GLTFLoader.js',
+                 '/static/vendor/three/STLLoader.js',
+                 '/static/vendor/three/OrbitControls.js'];
+    (function next(i){
+      if(i>=files.length){ M3D.loaded=true; M3D.loading=false; resolve(true); return; }
+      const s=document.createElement('script');
+      s.src=files[i];
+      s.onload=()=>next(i+1);
+      s.onerror=()=>{ M3D.loading=false; reject(new Error('无法加载 '+files[i])); };
+      document.head.appendChild(s);
+    })(0);
+  });
+}
+
+function openModel3DModal(){
+  if(!SEL.partId){ toast('请先选中一个零件',true); return; }
+  // 每次打开都按当前零件重置：清除上一零件残留的模型与选中态
+  M3D.curId=null;
+  m3dClearModel();
+  openModal('m3dMask');
+  m3dLoadList();
+  m3dLoadCliStatus();
+  m3dEnsureThree().then(()=>{ setTimeout(m3dInitViewer, 60); })
+    .catch(e=>{ document.getElementById('m3dEmpty').textContent='3D 组件加载失败：'+e.message; });
+}
+
+function m3dLoadCliStatus(){
+  api('/api/models3d/cli-status').then(r=>{
+    const el=document.getElementById('m3dCli');
+    if(r.available){
+      el.className='m3d-cli ok';
+      el.textContent='✓ 转换工具已就绪'+(r.version?(' (OCCT '+esc(r.version)+')'):'');
+    } else {
+      el.className='m3d-cli err';
+      el.title='将 npi_occt_cli.exe 放入服务运行目录后刷新即可预览';
+      el.textContent='✗ 未安装转换工具，仅可上传/下载';
+    }
+  });
+}
+
+function m3dLoadList(){
+  const box=document.getElementById('m3dList');
+  box.innerHTML='<div class="m3d-loading">加载中…</div>';
+  api('/api/models3d?project_id='+SEL.projId+'&part_id='+SEL.partId).then(list=>{
+    if(list.error){ box.innerHTML='<div class="m3d-none">'+esc(list.error)+'</div>'; return; }
+    if(!list.length){ box.innerHTML='<div class="m3d-none">该零件暂无 3D 模型<br>点击上方按钮上传 STEP/IGES/STL</div>'; return; }
+    box.innerHTML='';
+    list.forEach(m=>{
+      const d=document.createElement('div');
+      d.className='m3d-item'+(m.id===M3D.curId?' active':'');
+      d.innerHTML='<span class="m3d-tag '+m.status+'">'
+          +(m.status==='ready'?'可预览':m.status==='failed'?'失败':'转换中')+'</span>'
+        +'<span class="nm" title="'+esc(m.original_name)+'">'+esc(m.original_name)+'</span>'
+        +'<span class="sub">'+(m.size?((m.size/1024).toFixed(0)+' KB'):'')+'</span>'
+        +'<button class="btn btn-xs" onclick="event.stopPropagation();m3dDownload('+m.id+')">下载</button>'
+        +'<button class="btn btn-xs btn-danger" onclick="event.stopPropagation();m3dDelete('+m.id+')">删除</button>';
+      d.onclick=()=>{ M3D.curId=m.id; m3dLoadList(); m3dShow(m); };
+      box.appendChild(d);
+    });
+  });
+}
+
+function m3dUpload(input){
+  const f=input.files && input.files[0];
+  input.value='';
+  if(!f) return;
+  const fd=new FormData();
+  fd.append('file', f);
+  fd.append('project_id', SEL.projId);
+  fd.append('part_id', SEL.partId);
+  fd.append('unit', 'mm');
+  toast('正在上传并转换，请稍候…');
+  fetch('/api/models3d/upload',{method:'POST',body:fd,credentials:'same-origin'})
+    .then(r=>r.json())
+    .then(r=>{
+      if(r.error){ toast(r.error,true); return; }
+      if(r.status==='ready'){ toast('上传并转换成功'); m3dLoadList(); }
+      else { toast('已保存，但转换失败：'+(r.error||'未知原因'), true); m3dLoadList(); }
+    })
+    .catch(e=>toast('上传失败：'+e.message,true));
+}
+
+function m3dDownload(id){ window.location='/api/models3d/'+id+'/source'; }
+function m3dDelete(id){
+  askConfirm('删除 3D 模型','确认删除该模型？原始文件与转换结果都会移除。',()=>{
+    api('/api/models3d/'+id,{method:'DELETE'}).then(r=>{
+      if(r.error) toast(r.error,true);
+      else { toast('已删除'); if(M3D.curId===id){ M3D.curId=null; m3dClearModel(); } m3dLoadList(); }
+    });
+  },'删除','btn-danger');
+}
+
+/* ---------- three.js 场景 ---------- */
+function m3dInitViewer(){
+  const box=document.getElementById('m3dViewer');
+  if(M3D.renderer) return;
+  if(typeof THREE==='undefined'){ document.getElementById('m3dEmpty').textContent='three.js 未加载'; return; }
+  const w=box.clientWidth||800, h=box.clientHeight||420;
+  M3D.renderer=new THREE.WebGLRenderer({antialias:true, alpha:true});
+  // glTF 的 baseColorFactor 是线性值，渲染器需做 sRGB 输出转换，否则模型会明显发暗
+  if(THREE.sRGBEncoding!=null) M3D.renderer.outputEncoding=THREE.sRGBEncoding;
+  M3D.renderer.setPixelRatio(window.devicePixelRatio||1);
+  M3D.renderer.setSize(w,h);
+  box.appendChild(M3D.renderer.domElement);
+
+  M3D.scene=new THREE.Scene();
+  M3D.camera=new THREE.PerspectiveCamera(45, w/h, 0.01, 100000);
+  M3D.camera.position.set(200,200,200);
+
+  M3D.scene.add(new THREE.AmbientLight(0xffffff,0.75));
+  const d1=new THREE.DirectionalLight(0xffffff,0.7); d1.position.set(1,1,1); M3D.scene.add(d1);
+  const d2=new THREE.DirectionalLight(0xffffff,0.35); d2.position.set(-1,-0.6,-1); M3D.scene.add(d2);
+
+  M3D.grid=new THREE.GridHelper(100,20,0xc8cdd6,0xe6e9ef);
+  M3D.scene.add(M3D.grid);
+
+  if(THREE.OrbitControls){
+    M3D.controls=new THREE.OrbitControls(M3D.camera, M3D.renderer.domElement);
+    M3D.controls.enableDamping=true;
+    M3D.controls.dampingFactor=0.12;
+  }
+  (function loop(){ requestAnimationFrame(loop);
+    if(M3D.controls) M3D.controls.update();
+    if(M3D.renderer) M3D.renderer.render(M3D.scene, M3D.camera);
+  })();
+  window.addEventListener('resize', m3dResize, false);
+  // 容器尺寸变化（弹窗打开/窗口缩放）时同步 canvas 尺寸
+  if(window.ResizeObserver && !M3D._ro){
+    M3D._ro=new ResizeObserver(()=>m3dResize());
+    M3D._ro.observe(box);
+  }
+}
+
+function m3dResize(){
+  const box=document.getElementById('m3dViewer');
+  if(!box||!M3D.renderer) return;
+  const w=box.clientWidth||800,h=box.clientHeight||420;
+  M3D.camera.aspect=w/h; M3D.camera.updateProjectionMatrix();
+  M3D.renderer.setSize(w,h);
+}
+
+function m3dClearModel(){
+  if(M3D.model){ M3D.scene.remove(M3D.model); M3D.model=null; }
+  document.getElementById('m3dEmpty').style.display='';
+  document.getElementById('m3dEmpty').textContent='从右侧选择一个模型开始预览';
+  document.getElementById('m3dMeta').innerHTML='';
+  document.getElementById('m3dStat').textContent='';
+}
+
+function m3dShow(m){
+  m3dEnsureThree().then(()=>{
+    m3dInitViewer();
+    if(!M3D.renderer) return;
+    if(m.status!=='ready'){
+      m3dClearModel();
+      document.getElementById('m3dEmpty').textContent=
+        '该模型无可预览的转换结果'+(m.error_msg?('：'+m.error_msg):'');
+      return;
+    }
+    document.getElementById('m3dEmpty').textContent='正在加载模型…';
+    document.getElementById('m3dEmpty').style.display='';
+    new THREE.GLTFLoader().load('/api/models3d/'+m.id+'/glb', (gltf)=>{
+      m3dClearModel();
+      document.getElementById('m3dEmpty').style.display='none';
+      M3D.model=gltf.scene;
+      npiNormalizeMaterials(M3D.model);
+      M3D.scene.add(M3D.model);
+      m3dResize();          // 先校正画布尺寸（弹窗刚打开时可能还没就绪）
+      m3dFitView(M3D.model);
+      m3dRenderMeta(m);
+    }, undefined, (err)=>{
+      document.getElementById('m3dEmpty').textContent='模型加载失败：'+(err&&err.message||'未知错误');
+    });
+  }).catch(e=>toast(e.message,true));
+}
+
+function m3dFitView(obj){
+  const box=new THREE.Box3().setFromObject(obj);
+  const size=box.getSize(new THREE.Vector3());
+  const center=box.getCenter(new THREE.Vector3());
+  const maxDim=Math.max(size.x,size.y,size.z)||1;
+  const dist=maxDim*2.2;
+  M3D.camera.near=maxDim/1000;
+  M3D.camera.far=maxDim*100;
+  M3D.camera.position.set(center.x+dist, center.y+dist*0.8, center.z+dist);
+  M3D.camera.updateProjectionMatrix();
+  if(M3D.controls){ M3D.controls.target.copy(center); M3D.controls.update(); }
+  if(M3D.grid){
+    M3D.grid.scale.setScalar(maxDim/100);
+    M3D.grid.position.set(center.x, box.min.y, center.z);
+  }
+  M3D._home={p:M3D.camera.position.clone(), t:center.clone()};
+}
+
+function m3dResetView(){
+  if(!M3D._home||!M3D.camera) return;
+  M3D.camera.position.copy(M3D._home.p);
+  if(M3D.controls){ M3D.controls.target.copy(M3D._home.t); M3D.controls.update(); }
+}
+function m3dToggleWire(){
+  if(!M3D.model) return;
+  M3D.wire=!M3D.wire;
+  M3D.model.traverse(o=>{ if(o.isMesh) o.material.wireframe=M3D.wire; });
+}
+function m3dToggleGrid(){
+  if(M3D.grid) M3D.grid.visible=!M3D.grid.visible;
+}
+
+function m3dRenderMeta(m){
+  const mt=m.meta||{};
+  const n=v=>(v==null?'-':(typeof v==='number'?v.toFixed(2):v));
+  const bb=mt.bbox||{};
+  const sz=bb.size||[0,0,0];
+  document.getElementById('m3dMeta').innerHTML=
+      '<b>'+esc(m.original_name)+'</b> · '+esc(m.src_format||'')
+    + '<br>体积：'+n(mt.volume)+' mm³　　面积：'+n(mt.area)+' mm²'
+    + '<br>尺寸：'+n(sz[0])+' × '+n(sz[1])+' × '+n(sz[2])+' mm'
+    + '<br>实体/面/三角面：'+(mt.counts?mt.counts.solids:'-')+' / '
+      +(mt.counts?mt.counts.faces:'-')+' / '+(mt.counts?mt.counts.triangles:'-')
+    + '<br>上传人：'+esc(m.uploader_name||m.uploader_id||'')+' · '+esc((m.uploaded_at||'').slice(0,16));
+  document.getElementById('m3dStat').textContent =
+    (mt.counts? (mt.counts.triangles+' 三角面') : '');
+}
+
+/* ---------- 用户管理 ---------- */
+async function renderUsers(){
+  const r=await api('/api/users');
+  if(r.error){ toast(r.error,true); return; }
+  CURRENT.users = r;
+  _renderUsersFull();
+}
+function _renderUsersFull(){
+  const body=document.getElementById('adminBody');
+  body.innerHTML='<div class="admin-toolbar">'
+    +'<div class="admin-section-title">👥 用户列表</div>'
+    +'<input type="text" id="userFilterUid" placeholder="筛选工号" class="user-filter-input" oninput="_renderUsersFiltered()">'
+    +'<input type="text" id="userFilterName" placeholder="筛选姓名" class="user-filter-input" oninput="_renderUsersFiltered()">'
+    +'<div class="spacer"></div>'
+    +'<button class="btn" onclick="exportUsers()">📥 导出 Excel</button>'
+    +'<button class="btn" onclick="openImportUsers()">📤 导入 Excel</button>'
+    +'<button class="btn btn-primary" onclick="openUserMask()">+ 新增用户</button></div>'
+    +'<table class="admin-tbl"><thead><tr><th>工号</th><th>姓名</th><th>部门</th><th>职位</th><th>角色</th><th>状态</th><th style="width:280px">操作</th></tr></thead><tbody id="userTableBody"></tbody></table>';
+  _renderUsersFiltered();
+}
+function _renderUsersFiltered(){
+  const fUid=(document.getElementById('userFilterUid')?.value||'').trim().toLowerCase();
+  const fName=(document.getElementById('userFilterName')?.value||'').trim().toLowerCase();
+  let list = CURRENT.users || [];
+  if(fUid) list = list.filter(u=>(u.uid||'').toLowerCase().includes(fUid));
+  if(fName) list = list.filter(u=>(u.name||'').toLowerCase().includes(fName));
+  let html='';
+    list.forEach(u=>{
+    const roleMap={superAdmin:['tag red','系统管理员'],projectAdmin:['tag orange','项目管理员'],pd:['tag blue','一般用户']};
+    const rp=roleMap[u.role]||['tag blue','一般用户'];
+    html+='<tr><td>'+esc(u.uid)+'</td><td>'+esc(u.name)+'</td><td>'+esc(u.dept||'')+'</td>'
+      +'<td>'+esc(u.position_name||'-')+'</td>'
+      +'<td><span class="'+rp[0]+'">'+rp[1]+'</span></td>'
+      +'<td>'+(u.frozen?'<span class="tag gray">已冻结</span>':'<span class="tag green">正常</span>')+'</td>'
+      +'<td><div class="actions" style="flex-wrap:wrap">'
+      +'<button class="btn btn-sm" onclick="editUser(\''+u.uid+'\')">编辑</button>'
+      +'<button class="btn btn-sm btn-danger-hover" onclick="deleteUser(\''+u.uid+'\')">删除</button>'
+      +'<button class="btn btn-sm" onclick="resetPw(\''+u.uid+'\')">重置密码</button>'
+      +'<button class="btn btn-sm '+(u.frozen?'btn-success':'')+'" onclick="toggleFreeze(\''+u.uid+'\','+(u.frozen?0:1)+')">'+(u.frozen?'解冻':'冻结')+'</button>'
+      +'</div></td></tr>';
+  });
+  if(!list.length){
+    html+='<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:24px">无匹配用户</td></tr>';
+  }
+  document.getElementById('userTableBody').innerHTML=html;
+}
+function exportUsers(){
+  const a=document.createElement('a');
+  a.href='/api/users/export?format=xlsx';
+  a.download='NPI用户列表.xlsx';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+function downloadUserTemplate(){
+  const a=document.createElement('a');
+  a.href='/api/users/import/template';
+  a.download='NPI用户导入模板.xlsx';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+function _resetImportDropzone(){
+  const dz=document.getElementById('importDropzone');
+  if(!dz) return;
+  dz.querySelector('.import-dropzone-icon').textContent='📂';
+  dz.querySelector('.import-dropzone-text').textContent='点击选择 Excel 文件';
+  dz.querySelector('.import-dropzone-hint').textContent='支持 .xlsx / .xls 格式，文件大小建议不超过 5MB';
+  dz.classList.remove('has-file');
+}
+function _setImportDropzone(filename){
+  const dz=document.getElementById('importDropzone');
+  if(!dz) return;
+  dz.querySelector('.import-dropzone-icon').textContent='📄';
+  dz.querySelector('.import-dropzone-text').textContent=esc(filename);
+  dz.querySelector('.import-dropzone-hint').textContent='已选择文件，下方为导入预览';
+  dz.classList.add('has-file');
+}
+function _onImportDrop(e){
+  const dz=document.getElementById('importDropzone');
+  if(dz) dz.classList.remove('dragover');
+  const files=e.dataTransfer && e.dataTransfer.files;
+  if(!files || !files.length) return;
+  const input=document.getElementById('importUserFile');
+  const dt=new DataTransfer();
+  for(let i=0;i<files.length;i++) dt.items.add(files[i]);
+  input.files=dt.files;
+  onImportUserFileChange();
+}
+function openImportUsers(){
+  document.getElementById('importUserFile').value='';
+  document.getElementById('importUserPreview').innerHTML='<div class="import-preview-empty">请先上传 Excel 文件，导入前可预览并检查错误</div>';
+  document.getElementById('importUserConfirm').style.display='none';
+  _resetImportDropzone();
+  openModal('importUserMask');
+}
+function _buildImportPreviewTable(data){
+  const roleColor={新增:'tag green',更新:'tag orange',跳过:'tag gray',错误:'tag red'};
+  let html='<div style="margin-bottom:10px;font-size:13px;color:var(--t2)">'
+    +'共 <b>'+data.stats.total+'</b> 行：新增 <b>'+data.stats.create+'</b>，更新 <b>'+data.stats.update+'</b>，跳过 <b>'+data.stats.skip+'</b>，错误 <b>'+data.stats.error+'</b></div>';
+  html+='<div style="max-height:360px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius-sm)"><table class="admin-tbl" style="margin:0"><thead><tr><th>行号</th><th>动作</th><th>工号</th><th>姓名</th><th>部门</th><th>职位</th><th>角色</th><th>状态</th><th>说明</th></tr></thead><tbody>';
+  data.rows.forEach(r=>{
+    const c=roleColor[r.action]||'tag';
+    html+='<tr><td>'+r.row+'</td><td><span class="'+c+'">'+esc(r.action)+'</span></td>'
+      +'<td>'+esc(r.uid)+'</td><td>'+esc(r.name)+'</td><td>'+esc(r.dept)+'</td>'
+      +'<td>'+esc(r.position_raw||'')+'</td>'
+      +'<td>'+esc(r.role_text||r.role_raw)+'</td><td>'+esc(r.status_text||r.status_raw)+'</td>'
+      +'<td style="color:'+(r.action==='错误'?'var(--danger)':'var(--t3)')+'">'+esc(r.action_detail||'')+'</td></tr>';
+  });
+  html+='</tbody></table></div>';
+  if(data.errors && data.errors.length){
+    html+='<div style="margin-top:10px;color:var(--danger);font-size:13px"><b>请修正以下错误后再导入：</b><ul style="margin:6px 0 0 18px">'+data.errors.map(e=>'<li>'+esc(e)+'</li>').join('')+'</ul></div>';
+  }
+  return html;
+}
+async function onImportUserFileChange(){
+  const input=document.getElementById('importUserFile');
+  const file=input.files[0];
+  if(!file) return;
+  _setImportDropzone(file.name);
+  const fd=new FormData();
+  fd.append('file',file);
+  const preview=document.getElementById('importUserPreview');
+  preview.innerHTML='<div class="loading-box"><div class="spinner"></div>正在解析...</div>';
+  const r=await fetch('/api/users/import?dry_run=1',{method:'POST',body:fd,credentials:'same-origin'}).then(x=>x.json());
+  if(r.error){ preview.innerHTML='<div style="color:var(--danger);padding:12px">'+esc(r.error)+'</div>'; return; }
+  CURRENT.importUserPreview = r;
+  preview.innerHTML=_buildImportPreviewTable(r);
+  const btn=document.getElementById('importUserConfirm');
+  btn.style.display=(r.stats.error===0 && (r.stats.create+r.stats.update)>0)?'inline-block':'none';
+}
+async function confirmImportUsers(){
+  const data=CURRENT.importUserPreview;
+  if(!data || data.stats.error>0 || (data.stats.create+data.stats.update)===0) return;
+  const input=document.getElementById('importUserFile');
+  const file=input.files[0];
+  if(!file){ toast('请先选择文件',true); return; }
+  const fd=new FormData();
+  fd.append('file',file);
+  const btn=document.getElementById('importUserConfirm');
+  btn.disabled=true; btn.textContent='导入中…';
+  const r=await fetch('/api/users/import?dry_run=0',{method:'POST',body:fd,credentials:'same-origin'}).then(x=>x.json());
+  btn.disabled=false; btn.textContent='确认导入';
+  if(r.error){ toast(r.error,true); return; }
+  closeModal('importUserMask');
+  toast('导入完成：新增 '+r.created+' 人，更新 '+r.updated+' 人');
+  renderUsers();
+}
+async function openUserMask(id,name,dept,role,position_id){
+  await _loadPositions();
+  const posSel=document.getElementById('uPosition');
+  posSel.innerHTML='<option value="">未设置</option>'+(CURRENT.positions||[]).map(p=>'<option value="'+p.id+'">'+esc(p.name)+'</option>').join('');
+  document.getElementById('uEditId').value=id||'';
+  document.getElementById('userMaskTitle').textContent=id?'编辑用户':'新增用户';
+  const uidEl=document.getElementById('uUid');
+  uidEl.value=id||'';
+  uidEl.readOnly=!!id;
+  document.getElementById('uName').value=name||'';
+  document.getElementById('uDept').value=dept||'';
+  document.getElementById('uRole').value=role||'pd';
+  posSel.value=position_id||'';
+  document.getElementById('uPw').value='';
+  openModal('userMask');
+}
+async function editUser(uid){
+  const u=(CURRENT.users||[]).find(x=>x.uid===uid);
+  if(!u){ renderUsers(); return; }
+  await openUserMask(u.uid,u.name,u.dept,u.role,u.position_id);
+}
+function saveUser(){
+  const id=document.getElementById('uEditId').value;
+  const uid=document.getElementById('uUid').value.trim();
+  const name=document.getElementById('uName').value.trim();
+  const dept=document.getElementById('uDept').value.trim();
+  const role=document.getElementById('uRole').value;
+  const position_id=document.getElementById('uPosition').value;
+  const pw=document.getElementById('uPw').value;
+  if(!uid||!name){ toast('工号与姓名必填',true); return; }
+  if(id){
+    const body={name,dept,role,position_id};
+    if(pw) body.password=pw;
+    api('/api/users/'+id,{method:'PUT',body}).then(r=>{
+      if(r.error) toast(r.error,true); else { toast('已保存'); closeModal('userMask'); renderUsers(); }
+    });
+  } else {
+    api('/api/users/create',{method:'POST',body:{uid,name,dept,role,position_id,password:pw||'123456'}}).then(r=>{
+      if(r.error) toast(r.error,true); else { toast('用户已创建'); closeModal('userMask'); renderUsers(); }
+    });
+  }
+}
+function deleteUser(uid){
+  askConfirm('删除用户','确定删除该用户吗？此操作会一并解除其所有项目 / 文件夹权限，且不可恢复。',()=>{
+    api('/api/users/'+uid,{method:'DELETE'}).then(r=>{ if(r.error)toast(r.error,true); else { toast('已删除'); renderUsers(); } });
+  },'删除','btn-danger');
+}
+function resetPw(uid){ askConfirm('重置密码','确定将该用户密码重置为 123456 吗？',()=>{ api('/api/users/'+uid+'/password',{method:'POST',body:{password:'123456'}}).then(r=>{ if(r.error)toast(r.error,true); else toast('密码已重置'); }); },'重置','btn-danger'); }
+function toggleFreeze(uid,fz){ api('/api/users/'+uid+'/freeze',{method:'POST',body:{frozen:fz}}).then(r=>{ if(r.error)toast(r.error,true); else { toast('已更新'); renderUsers(); } }); }
+
+/* ---------- 审计日志 ---------- */
+async function renderAudit(){
+  const r=await api('/api/audit?limit=300');
+  if(r.error){ toast(r.error,true); return; }
+  const body=document.getElementById('adminBody');
+  let html='<div class="admin-toolbar"><div class="admin-section-title">📋 审计日志（最近 300 条）</div></div>';
+  if(!r.length){ body.innerHTML=html+'<div class="admin-empty">暂无审计记录</div>'; return; }
+  html+='<table class="admin-tbl"><thead><tr><th style="width:140px">时间</th><th>操作人</th><th>动作</th><th>详情</th><th style="width:100px">IP</th></tr></thead><tbody>';
+  r.forEach(a=>{
+    html+='<tr><td title="'+esc(a.ts||'')+'">'+fmtTime(a.ts)+'</td><td>'+esc(a.user_name)+'</td><td><span class="tag gray">'+esc(a.action_label)+'</span></td><td>'+esc(a.detail)+'</td><td>'+(a.ip||'')+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  body.innerHTML=html;
+}
+
+/* ---------- 职位管理 ---------- */
+async function _loadPositions(){
+  if(CURRENT.positions && CURRENT.positions.length) return;
+  const r=await api('/api/admin/positions');
+  if(r.error){ toast(r.error,true); CURRENT.positions=[]; return; }
+  CURRENT.positions=r;
+}
+async function renderPositions(){
+  await _loadPositions();
+  const r=CURRENT.positions;
+  const body=document.getElementById('adminBody');
+  let html='<div class="admin-toolbar"><div class="admin-section-title">💼 职位管理</div><div class="spacer"></div><button class="btn btn-primary" onclick="openPosMask()">+ 新建职位</button></div>';
+  if(!r.length){ body.innerHTML=html+'<div class="admin-empty">暂无职位</div>'; return; }
+  html+='<table class="admin-tbl"><thead><tr><th>职位名称</th><th>描述</th><th>状态</th><th>创建时间</th><th style="width:220px">操作</th></tr></thead><tbody>';
+  r.forEach(p=>{
+    html+='<tr><td>'+esc(p.name)+'</td><td>'+esc(p.description||'')+'</td>'
+      +'<td><span class="tag '+(p.active?'green':'gray')+'">'+(p.active?'启用':'停用')+'</span></td>'
+      +'<td>'+fmtTime(p.created_at)+'</td>'
+      +'<td><div class="actions">'
+      +'<button class="btn btn-sm" onclick="editPosition('+p.id+')">编辑</button>'
+      +'<button class="btn btn-sm btn-danger-hover" onclick="deletePosition('+p.id+')">删除</button>'
+      +'<button class="btn btn-sm '+(p.active?'':'btn-success')+'" onclick="togglePosition('+p.id+')">'+(p.active?'停用':'启用')+'</button>'
+      +'</div></td></tr>';
+  });
+  html+='</tbody></table>';
+  body.innerHTML=html;
+}
+function openPosMask(id){
+  const p=id?((CURRENT.positions||[]).find(x=>x.id===id)||{}):{};
+  document.getElementById('posId').value=id||'';
+  document.getElementById('posName').value=p.name||'';
+  document.getElementById('posDesc').value=p.description||'';
+  openModal('posMask');
+}
+function editPosition(id){ openPosMask(id); }
+function deletePosition(id){
+  const p=(CURRENT.positions||[]).find(x=>x.id===id);
+  askConfirm('删除职位','确认删除职位“'+(p?esc(p.name):id)+'”吗？此操作不可恢复。',()=>{
+    api('/api/admin/positions/'+id,{method:'DELETE'}).then(r=>{
+      if(r.error) toast(r.error,true);
+      else { toast('职位已删除'); renderPositions(); }
+    });
+  },'删除','btn-danger');
+}
+function savePosition(){
+  const id=document.getElementById('posId').value;
+  const name=document.getElementById('posName').value.trim();
+  const desc=document.getElementById('posDesc').value.trim();
+  if(!name){ toast('职位名称必填',true); return; }
+  const url=id?('/api/admin/positions/'+id):'/api/admin/positions';
+  const method=id?'PUT':'POST';
+  api(url,{method,body:{name,description:desc}}).then(r=>{
+    if(r.error) toast(r.error,true);
+    else { toast('保存成功'); closeModal('posMask'); renderPositions(); }
+  });
+}
+function togglePosition(id){
+  api('/api/admin/positions/'+id+'/toggle',{method:'POST'}).then(r=>{
+    if(r.error) toast(r.error,true); else { toast('状态已更新'); renderPositions(); }
+  });
+}
+
+/* ---------- 阶段模板 ---------- */
+async function renderPhaseTemplates(){
+  const r=await api('/api/phase-templates');
+  if(r.error){ toast(r.error,true); return; }
+  const body=document.getElementById('adminBody');
+  body.innerHTML='<div class="admin-toolbar"><div class="admin-section-title">📁 阶段模板</div></div>'
+    +'<p style="font-size:12px;color:var(--t3);margin:-4px 0 14px">此模板决定新建零件 / 新增阶段时自动生成的文件夹结构；修改仅影响之后新建的内容，已有零件不受影响。文件夹名可用 "/" 表示层级，如 Drawing/2D。</p>'
+    +'<div id="tmplWrap"></div>';
+  const wrap=document.getElementById('tmplWrap');
+  const phases=Object.keys(r).sort();
+  if(!phases.length){ wrap.innerHTML='<div class="admin-empty">暂无阶段模板</div>'; return; }
+  let html='';
+  phases.forEach(ph=>{
+    html+='<div class="admin-card">'
+      +'<div class="admin-card-title">📁 '+esc(ph)+'</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;min-height:28px">';
+    (r[ph]||[]).forEach(dt=>{
+      html+='<span class="tag blue" style="gap:5px;padding-right:6px">'
+        +esc(dt)+' <button style="border:none;background:none;color:var(--danger);cursor:pointer;font-size:14px;line-height:1;padding:0 2px" onclick="deletePhaseTemplate(\''+esc(ph)+'\',\''+esc(dt)+'\')">×</button></span>';
+    });
+    if(!(r[ph]||[]).length) html+='<span class="tag gray">暂无文件夹</span>';
+    html+='</div>'
+      +'<div style="display:flex;gap:8px">'
+      +'<input type="text" id="tmplNew_'+ph.replace(/[^a-zA-Z0-9]/g,'_')+'" placeholder="新文件夹名，如 ECN" style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px">'
+      +'<button class="btn btn-primary btn-sm" onclick="addPhaseTemplate(\''+esc(ph)+'\')">+ 添加</button>'
+      +'</div></div>';
+  });
+  // 新增阶段
+  html+='<div class="admin-card" style="background:#f8f9fb">'
+    +'<div class="admin-card-title">➕ 新增阶段</div>'
+    +'<div style="display:flex;gap:10px;flex-wrap:wrap">'
+    +'<input type="text" id="tmplNewPhase" placeholder="新阶段名称" style="flex:1;min-width:140px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px">'
+    +'<input type="text" id="tmplNewPhaseDoc" placeholder="首个文档类型，如 Drawing/2D" style="flex:1;min-width:180px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px">'
+    +'<button class="btn btn-primary" onclick="createPhaseTemplate()">+ 新增阶段</button>'
+    +'</div></div>';
+  wrap.innerHTML=html;
+}
+function addPhaseTemplate(phase){
+  const input=document.getElementById('tmplNew_'+phase.replace(/[^a-zA-Z0-9]/g,'_'));
+  const doc_type=(input.value||'').trim();
+  if(!doc_type){ toast('请输入文件夹名',true); return; }
+  api('/api/admin/phase-templates',{method:'POST',body:{phase,doc_type}}).then(r=>{
+    if(r.error) toast(r.error,true); else { toast('已添加'); renderPhaseTemplates(); }
+  });
+}
+function deletePhaseTemplate(phase,doc_type){
+  askConfirm('删除模板','确认删除 '+phase+'/'+doc_type+' ？',()=>{
+    api('/api/admin/phase-templates',{method:'DELETE',body:{phase,doc_type}}).then(r=>{
+      if(r.error) toast(r.error,true); else { toast('已删除'); renderPhaseTemplates(); }
+    });
+  },'删除','btn-danger');
+}
+function createPhaseTemplate(){
+  const phase=(document.getElementById('tmplNewPhase').value||'').trim();
+  const doc_type=(document.getElementById('tmplNewPhaseDoc').value||'').trim();
+  if(!phase||!doc_type){ toast('阶段名称和首个文档类型均必填',true); return; }
+  api('/api/admin/phase-templates',{method:'POST',body:{phase,doc_type}}).then(r=>{
+    if(r.error) toast(r.error,true); else { toast('阶段已创建'); renderPhaseTemplates(); }
+  });
+}
+
+/* ---------- 系统设置 ---------- */
+let SETTINGS_ROOTS=[];
+let SETTINGS_ROOT_ROWS=[]; // 最近一次后端返回的完整状态
+function fmtBytes(b){
+  if(b===0) return '0 B';
+  const units=['B','KB','MB','GB','TB']; let u=0;
+  while(b>=1024 && u<units.length-1){ b/=1024; u++; }
+  return b.toFixed(u===0?0:2)+' '+units[u];
+}
+async function renderSettings(){
+  const r=await api('/api/admin/system-config/upload-roots');
+  if(r.error){ toast(r.error,true); return; }
+  SETTINGS_ROOT_ROWS=(r.roots||[]).slice();
+  SETTINGS_ROOTS=SETTINGS_ROOT_ROWS.map(x=>x.path);
+  const body=document.getElementById('adminBody');
+  body.innerHTML='<div class="admin-toolbar"><div class="admin-section-title">⚙️ 系统设置</div></div>'
+    +'<div class="admin-card">'
+    +'<div class="admin-card-title">文件存储路径</div>'
+    +'<div style="font-size:12px;color:var(--t3);margin-bottom:10px;line-height:1.6">可配置多个存储路径。<b>新上传文件会写入列表最后一个路径</b>；历史文件仍保留在原路径，系统会自动兼容读取、删除、修改。请勿将路径设为公共共享盘。</div>'
+    +'<div id="rootRows"></div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">'
+    +'<button class="btn btn-sm" onclick="addRootRow()">＋ 新增路径</button>'
+    +'<div style="display:flex;gap:10px"><button class="btn" onclick="openCurrentRoot()">打开当前目录</button><button class="btn btn-primary" onclick="saveSettings()">保存设置</button></div>'
+    +'</div>'
+    +'</div>';
+  renderRootRows(r.roots||[]);
+}
+function renderRootRows(rows){
+  const container=document.getElementById('rootRows');
+  if(!container) return;
+  let html='<table class="admin-tbl"><thead><tr><th style="width:40px">#</th><th>存储路径</th><th style="width:110px">状态</th><th style="width:100px">剩余空间</th><th style="width:180px">操作</th></tr></thead><tbody>';
+  rows.forEach((row,idx)=>{
+    const isCurrent=idx===rows.length-1;
+    const status=row.exists?(row.writable?'✅ 可用':'⚠️ 只读'):'❌ 不存在';
+    html+='<tr>'
+      +'<td>'+(idx+1)+(isCurrent?' <span title="当前写入路径" style="color:var(--green)">●</span>':'')+'</td>'
+      +'<td><input type="text" class="root-path-input" data-idx="'+idx+'" data-original="'+esc(row.path)+'" value="'+esc(row.path)+'" placeholder="例如 D:/Data/npi-uploads"></td>'
+      +'<td style="font-size:12px">'+status+'</td>'
+      +'<td style="font-size:12px">'+(row.exists?fmtBytes(row.free):'-')+'</td>'
+      +'<td><div class="actions" style="gap:4px">'
+      +'<button class="btn btn-sm" onclick="moveRoot('+idx+',-1)" '+(idx===0?'disabled':'')+'>↑</button>'
+      +'<button class="btn btn-sm" onclick="moveRoot('+idx+',1)" '+(idx===rows.length-1?'disabled':'')+'>↓</button>'
+      +'<button class="btn btn-sm" onclick="openRoot('+idx+')">打开</button>'
+      +'<button class="btn btn-sm btn-danger" onclick="removeRoot('+idx+')" '+(rows.length<=1?'disabled':'')+'>删除</button>'
+      +'</div></td>'
+      +'</tr>';
+  });
+  html+='</tbody></table>';
+  container.innerHTML=html;
+}
+function _buildRowsFromInputs(){
+  const inputs=document.querySelectorAll('.root-path-input');
+  const rows=[];
+  inputs.forEach(inp=>{
+    const idx=+inp.dataset.idx;
+    const val=(inp.value||'').trim();
+    const original=(inp.dataset.original||'').trim();
+    // 如果用户没改这行的路径，保留当前显示的状态（从 DOM 读取）
+    const tr=inp.closest('tr');
+    const statusCell=tr?tr.cells[2]:null;
+    const freeCell=tr?tr.cells[3]:null;
+    const statusText=statusCell?statusCell.innerText:'';
+    const exists=statusText.indexOf('不存在')<0;
+    const writable=statusText.indexOf('可用')>=0;
+    if(val===original && exists){
+      const old=SETTINGS_ROOT_ROWS.find(r=>r.path===val);
+      if(old){ rows[idx]={...old, path:val}; return; }
+    }
+    rows[idx]={path:val, exists:exists, writable:writable, free:0, total:0};
+  });
+  // 补齐 SETTINGS_ROOTS 末尾新增的空行
+  while(rows.length<SETTINGS_ROOTS.length) rows.push({path:'', exists:false, writable:false, free:0, total:0});
+  return rows;
+}
+function addRootRow(){
+  const rows=_buildRowsFromInputs();
+  rows.push({path:'', exists:false, writable:false, free:0, total:0});
+  SETTINGS_ROOTS=rows.map(r=>r.path);
+  SETTINGS_ROOT_ROWS=rows.slice();
+  renderRootRows(rows);
+}
+function removeRoot(idx){
+  if(SETTINGS_ROOTS.length<=1){ toast('至少需要保留一个存储路径',true); return; }
+  const rows=_buildRowsFromInputs();
+  rows.splice(idx,1);
+  SETTINGS_ROOTS=rows.map(r=>r.path);
+  SETTINGS_ROOT_ROWS=rows.slice();
+  renderRootRows(rows);
+}
+function moveRoot(idx,dir){
+  const newIdx=idx+dir;
+  if(newIdx<0 || newIdx>=SETTINGS_ROOTS.length) return;
+  const rows=_buildRowsFromInputs();
+  [rows[idx],rows[newIdx]]=[rows[newIdx],rows[idx]];
+  SETTINGS_ROOTS=rows.map(r=>r.path);
+  SETTINGS_ROOT_ROWS=rows.slice();
+  renderRootRows(rows);
+}
+function openRoot(idx){
+  api('/api/admin/system-config/open-upload-root',{method:'POST',body:{index:idx}}).then(r=>{
+    if(r.error) toast(r.error,true);
+    else toast('已尝试打开目录：'+r.path);
+  });
+}
+function openCurrentRoot(){
+  openRoot(SETTINGS_ROOTS.length-1);
+}
+function saveSettings(){
+  const inputs=document.querySelectorAll('.root-path-input');
+  const roots=[];
+  inputs.forEach(inp=>{
+    const v=inp.value.trim();
+    if(v) roots.push(v);
+  });
+  if(roots.length===0){ toast('至少需要保留一个存储路径',true); return; }
+  api('/api/admin/system-config/upload-roots',{method:'PUT',body:{roots}}).then(r=>{
+    if(r.error) toast(r.error,true);
+    else { toast('保存成功'); renderSettings(); }
+  });
+}
+
+/* 选中零件节点时：左侧内联渲染该零件的 3D 图（three.js，替代原「零件概览图」），
+ * 右侧显示零件信息卡。项目节点不展示概览图，直接走文件列表（见 selectNode/loadFiles）。
+ * 普通成员只读，管理员/可编辑成员可上传。 */
+async function renderPartOverview(){
+  const wrap=document.getElementById('content');
+  const pid=SEL.projId, ptid=SEL.partId;
+  const titleName = (TREE.find(n=>n.id==ptid && n.type==='part')||{}).name || '';
+  const canAdmin=isProjAdmin(pid);
+  p3dDestroy();
+  const can3d = canEditProjectContent(pid);
+  wrap.innerHTML='<div class="overview-wrap">'
+    +'<div class="overview-title">🧊 零件 3D 图：'+esc(titleName)
+    +'<span class="meta" style="font-size:12px;color:var(--t3);font-weight:400;margin-left:10px">STEP / IGES / STL · 可旋转缩放</span></div>'
+    +'<div class="ov-split">'
+    +'<div class="ov-left"><div id="part3dHost" class="p3d-wrap"><div class="loading-box"><div class="spinner"></div>正在加载 3D 图…</div></div></div>'
+    +'<div class="ov-right" id="partInfoPanel"><div class="pi-card"><div class="pi-body" style="color:var(--t3);font-size:12px">正在加载零件信息…</div></div></div>'
+    +'</div></div>';
+  renderPartInfoPanel(ptid, pid, canAdmin);
+  renderPart3D(ptid, pid, can3d);
+}
+/* ---------- 零件 3D 图：详情页左侧内联渲染（替代原「零件概览图」） ----------
+ * 复用 m3dEnsureThree() 按需加载 three.js；使用独立的 P3D 渲染器实例，
+ * 与弹窗中的 M3D 互不干扰。切换节点/进入文件视图时调用 p3dDestroy() 释放。 */
+let P3D={inited:false, renderer:null, scene:null, camera:null, controls:null,
+         model:null, grid:null, wire:false, raf:0, ro:null, curId:null, list:[], canManage:false};
+window.addEventListener('resize', function(){ p3dResize(); });
+
+function p3dDestroy(){
+  try{ if(P3D.raf) cancelAnimationFrame(P3D.raf); }catch(e){}
+  P3D.raf=0;
+  try{ if(P3D.ro){ P3D.ro.disconnect(); P3D.ro=null; } }catch(e){}
+  try{
+    if(P3D.controls && P3D.controls.dispose) P3D.controls.dispose();
+    if(P3D.renderer){
+      const cv=P3D.renderer.domElement;
+      if(cv && cv.parentNode) cv.parentNode.removeChild(cv);
+      if(P3D.renderer.dispose) P3D.renderer.dispose();
+      if(P3D.renderer.forceContextLoss) P3D.renderer.forceContextLoss();
+    }
+  }catch(e){}
+  clearTimeout(P3D._revealT); P3D._pendingReveal=false; P3D._lastW=P3D._lastH=0;
+  P3D.renderer=null; P3D.scene=null; P3D.camera=null; P3D.controls=null;
+  P3D.model=null; P3D.grid=null; P3D.wire=false; P3D.inited=false; P3D.curId=null;
+}
+
+async function renderPart3D(ptid, pid, canManage){
+  P3D.canManage=!!canManage;
+  const host=document.getElementById('part3dHost');
+  if(!host) return;
+  host.innerHTML=
+    '<div class="p3d-bar">'
+    +'<span style="font-size:12px;color:var(--t2)">模型</span>'
+    +'<select class="p3d-sel" id="p3dSel" onchange="p3dSelect(this.value)"><option>加载中…</option></select>'
+    +'<span class="spacer"></span>'
+    +'<button class="btn btn-xs" onclick="p3dToggleWire()">线框</button>'
+    +'<button class="btn btn-xs" onclick="p3dResetView()">复位</button>'
+    +'</div>'
+    +'<div class="p3d-viewer" id="p3dViewer"><div class="p3d-empty" id="p3dEmpty">正在加载 3D 图…</div></div>'
+    +'<div class="p3d-meta" id="p3dMeta" style="display:none"></div>';
+  const list=await api('/api/models3d?project_id='+pid+'&part_id='+ptid);
+  if(!list || list.error){
+    const el=document.getElementById('p3dEmpty'); if(el) el.textContent='加载失败：'+((list&&list.error)||'未知错误');
+    return;
+  }
+  P3D.list=list||[];
+  const sel=document.getElementById('p3dSel');
+  const ready=P3D.list.filter(m=>m.status==='ready');
+  if(!P3D.list.length){
+    sel.innerHTML='<option>—</option>'; sel.disabled=true;
+    document.getElementById('p3dEmpty').innerHTML='<div class="ico">🧊</div><div>该零件暂无 3D 图</div>'
+      +'<div style="font-size:12px">把 STEP / IGES / STL 文件上传到该零件的文件夹后，这里会自动显示 3D 图</div>';
+    return;
+  }
+  sel.disabled=P3D.list.length<=1;
+  sel.innerHTML=P3D.list.map(m=>'<option value="'+m.id+'"'+(m.status!=='ready'?' disabled':'')+'>'
+    +esc(m.original_name)+(m.status==='ready'?'':'（未就绪）')+'</option>').join('');
+  // 默认显示「最新上传的」；若最新那条不可用，则退回到最新的可用项
+  const first=(P3D.list[0].status==='ready') ? P3D.list[0] : (ready[0]||P3D.list[0]);
+  sel.value=first.id;
+  p3dShow(first);
+}
+
+function p3dSelect(id){
+  const m=(P3D.list||[]).find(x=>String(x.id)===String(id));
+  if(m) p3dShow(m);
+}
+
+async function p3dShow(m){
+  try{ await m3dEnsureThree(); }catch(e){
+    const el=document.getElementById('p3dEmpty'); if(el) el.textContent='3D 组件加载失败：'+e.message;
+    return;
+  }
+  if(!p3dInitViewer()) return;
+  P3D.curId=m.id;
+  const meta=document.getElementById('p3dMeta');
+  if(m.status!=='ready'){
+    p3dClearModel('该模型无可预览的转换结果'+(m.error_msg?('：'+m.error_msg):''));
+    return;
+  }
+  const empty=document.getElementById('p3dEmpty');
+  if(empty){ empty.style.display=''; empty.textContent='正在加载模型…'; }
+  if(meta){ meta.innerHTML=''; meta.style.display='none'; }
+  const glbUrl=m.glb_url||('/api/models3d/'+m.id+'/glb');
+  // 零件文件按需转换：首次预览先取元数据（顺带完成转换），再加载 GLB
+  if((!m.meta || !Object.keys(m.meta).length) && m.meta_url){
+    if(empty) empty.textContent='正在转换模型…（首次预览需转换，请稍候）';
+    try{
+      const mm=await api(m.meta_url);
+      if(mm && mm.error){ p3dClearModel('无法生成 3D 预览：'+mm.error); return; }
+      m.meta=mm||{};
+    }catch(e){ p3dClearModel('无法生成 3D 预览：'+e.message); return; }
+    if(empty) empty.textContent='正在加载模型…';
+  }
+  new THREE.GLTFLoader().load(glbUrl, (gltf)=>{
+    if(P3D.model && P3D.scene){ P3D.scene.remove(P3D.model); P3D.model=null; }
+    P3D.model=gltf.scene;
+    npiNormalizeMaterials(P3D.model);
+    P3D.scene.add(P3D.model);
+    P3D._userMoved=false;
+    // 零件信息面板等会让 3D 视口尺寸稍后才稳定。稳定前先隐藏模型，
+    // 稳定后一次性贴合再显示，避免出现「先小后大」的跳变。
+    P3D._pendingReveal=true;
+    if(P3D.renderer) P3D.renderer.domElement.style.visibility='hidden';
+    p3dResize();
+    p3dFitView(P3D.model);
+    clearTimeout(P3D._revealT);
+    P3D._revealT=setTimeout(p3dReveal, 250);
+    p3dRenderMeta(m);
+  }, undefined, (err)=>{
+    const e3=document.getElementById('p3dEmpty');
+    if(e3){ e3.style.display=''; e3.textContent='模型加载失败：'+((err&&err.message)||'未知错误'); }
+  });
+}
+
+function p3dClearModel(msg){
+  if(P3D.model && P3D.scene){ P3D.scene.remove(P3D.model); P3D.model=null; }
+  clearTimeout(P3D._revealT); P3D._pendingReveal=false;      // 取消未完成的「显示」
+  if(P3D.renderer) P3D.renderer.domElement.style.visibility='';
+  const el=document.getElementById('p3dEmpty');
+  if(el){ el.style.display=''; el.textContent=msg||'从上方选择模型开始预览'; }
+  const meta=document.getElementById('p3dMeta'); if(meta){ meta.innerHTML=''; meta.style.display='none'; }
+}
+
+function p3dInitViewer(){
+  const box=document.getElementById('p3dViewer');
+  if(!box) return false;
+  if(P3D.inited && P3D.renderer) return true;
+  if(typeof THREE==='undefined'){ const el=document.getElementById('p3dEmpty'); if(el) el.textContent='three.js 未加载'; return false; }
+  const w=box.clientWidth||600, h=box.clientHeight||420;
+  P3D.renderer=new THREE.WebGLRenderer({antialias:true, alpha:true});
+  // 同上：sRGB 输出转换，保证模型本色正确显示
+  if(THREE.sRGBEncoding!=null) P3D.renderer.outputEncoding=THREE.sRGBEncoding;
+  P3D.renderer.setPixelRatio(window.devicePixelRatio||1);
+  P3D.renderer.setSize(w,h);
+  box.appendChild(P3D.renderer.domElement);
+  P3D.scene=new THREE.Scene();
+  P3D.camera=new THREE.PerspectiveCamera(45, w/h, 0.01, 100000);
+  P3D.camera.position.set(200,200,200);
+  P3D.scene.add(new THREE.AmbientLight(0xffffff,0.75));
+  const d1=new THREE.DirectionalLight(0xffffff,0.7); d1.position.set(1,1,1); P3D.scene.add(d1);
+  const d2=new THREE.DirectionalLight(0xffffff,0.35); d2.position.set(-1,-0.6,-1); P3D.scene.add(d2);
+  if(THREE.OrbitControls){
+    P3D.controls=new THREE.OrbitControls(P3D.camera, P3D.renderer.domElement);
+    P3D.controls.enableDamping=true; P3D.controls.dampingFactor=0.12;
+    P3D.controls.addEventListener('start', ()=>{ P3D._userMoved=true; });  // 用户手动旋转/缩放后，不再自动改视角
+  }
+  P3D.inited=true;
+  (function loop(){ P3D.raf=requestAnimationFrame(loop);
+    if(P3D.controls) P3D.controls.update();
+    if(P3D.renderer) P3D.renderer.render(P3D.scene, P3D.camera);
+  })();
+  if(window.ResizeObserver && !P3D.ro){ P3D.ro=new ResizeObserver(()=>p3dResize()); P3D.ro.observe(box); }
+  return true;
+}
+
+function p3dResize(){
+  const box=document.getElementById('p3dViewer');
+  if(!box||!P3D.renderer||!P3D.camera) return;
+  const w=box.clientWidth||600, h=box.clientHeight||420;
+  if(w<=0||h<=0) return;
+  const sizeChanged=(P3D._lastW!==w || P3D._lastH!==h);
+  P3D._lastW=w; P3D._lastH=h;
+  P3D.camera.aspect=w/h; P3D.camera.updateProjectionMatrix();
+  P3D.renderer.setSize(w,h);
+  if(P3D._pendingReveal){
+    // 尺寸还在变：推迟「显示并贴合」，等不再变化再一次性完成
+    clearTimeout(P3D._revealT); P3D._revealT=setTimeout(p3dReveal, 250);
+  }else if(sizeChanged && P3D.model && !P3D._userMoved){
+    // 用户未手动调整视角时，布局/窗口变化后保持默认大小
+    p3dFitView(P3D.model);
+  }
+}
+
+/* 画布尺寸稳定后：最后贴合一次，然后显示模型（避免「先小后大」的跳变） */
+function p3dReveal(){
+  if(!P3D._pendingReveal) return;
+  clearTimeout(P3D._revealT);
+  if(P3D.model && !P3D._userMoved) p3dFitView(P3D.model);
+  P3D._pendingReveal=false;
+  const e=document.getElementById('p3dEmpty'); if(e) e.style.display='none';
+  if(P3D.renderer) P3D.renderer.domElement.style.visibility='';
+}
+
+function p3dFitView(obj){
+  P3D._userMoved=false;                 // 每次贴合都视为「回到默认视角」
+  const box=new THREE.Box3().setFromObject(obj);
+  const size=box.getSize(new THREE.Vector3());
+  const center=box.getCenter(new THREE.Vector3());
+  const maxDim=Math.max(size.x,size.y,size.z)||1;
+  const cam=P3D.camera;
+  // 用包围盒 8 个角点做「投影贴合」：迭代求相机距离，使模型在画面里尽量大
+  // （比按包围球估算更准，且不裁边；TARGET 为目标填充比例）
+  const pts=[];
+  const mn=box.min, mx=box.max;
+  [mn.x,mx.x].forEach(x=>[mn.y,mx.y].forEach(y=>[mn.z,mx.z].forEach(z=>pts.push(new THREE.Vector3(x,y,z)))));
+  const dir=new THREE.Vector3(1,0.8,1).normalize();
+  const TARGET=0.92;
+  let dist=maxDim*1.5;
+  for(let it=0; it<5; it++){
+    cam.position.copy(center).addScaledVector(dir, dist);
+    cam.lookAt(center);
+    cam.updateMatrixWorld(true); cam.updateProjectionMatrix();
+    let m=0;
+    pts.forEach(p=>{ const v=p.clone().project(cam); m=Math.max(m, Math.abs(v.x), Math.abs(v.y)); });
+    if(m<1e-4) break;
+    const nd=dist*m/TARGET;                       // 投影尺寸≈与距离成反比，一步即接近
+    if(Math.abs(nd-dist) < dist*0.004){ dist=nd; break; }
+    dist=nd;
+  }
+  dist=Math.max(dist, maxDim*0.05);
+  cam.position.copy(center).addScaledVector(dir, dist);
+  cam.near=Math.max(maxDim/10000, 0.001); cam.far=dist+maxDim*100;
+  cam.updateProjectionMatrix();
+  if(P3D.controls){ P3D.controls.target.copy(center); P3D.controls.update(); }
+  P3D._home={p:cam.position.clone(), t:center.clone()};
+}
+
+function p3dResetView(){
+  if(!P3D._home||!P3D.camera) return;
+  P3D.camera.position.copy(P3D._home.p);
+  if(P3D.controls){ P3D.controls.target.copy(P3D._home.t); P3D.controls.update(); }
+}
+function p3dToggleWire(){
+  if(!P3D.model) return;
+  P3D.wire=!P3D.wire;
+  P3D.model.traverse(o=>{ if(o.isMesh) o.material.wireframe=P3D.wire; });
+}
+
+/* 统一 3D 材质：OCCT 导出的 glTF 只带 baseColorFactor，按 glTF 规范默认 metallic=1，
+ * 在没有环境贴图时会渲染得发暗发黑。这里统一为金属度 0、粗糙度 0.6，
+ * 让模型本色在现有灯光下正常显示；无材质的模型（走默认材质）同样受益。 */
+function npiNormalizeMaterials(scene){
+  if(!scene || !scene.traverse) return;
+  scene.traverse(o=>{
+    if(!o.isMesh || !o.material) return;
+    const arr=Array.isArray(o.material)?o.material:[o.material];
+    arr.forEach(mm=>{
+      if(mm && 'metalness' in mm){ mm.metalness=0.0; mm.roughness=0.6; mm.needsUpdate=true; }
+    });
+  });
+}
+
+function p3dRenderMeta(m){
+  const meta=document.getElementById('p3dMeta');
+  if(!meta) return;
+  const mt=m.meta||{};
+  const n=v=>(v==null?'-':(typeof v==='number'?v.toFixed(2):v));
+  const bb=mt.bbox||{}; const sz=bb.size||[0,0,0];
+  const c=mt.counts||{};
+  meta.style.display='';
+  meta.innerHTML='<b>'+esc(m.original_name)+'</b> · '+esc(m.src_format||'')
+    +'<br>体积 '+n(mt.volume)+' mm³ ｜ 面积 '+n(mt.area)+' mm²'
+    +' ｜ 尺寸 '+n(sz[0])+' × '+n(sz[1])+' × '+n(sz[2])+' mm'
+    +'<br>实体/面/三角面 '+(c.solids!=null?c.solids:'-')+' / '+(c.faces!=null?c.faces:'-')+' / '+(c.triangles!=null?c.triangles:'-')
+    +' ｜ 上传人 '+esc(m.uploader_name||m.uploader_id||'-')+' · '+esc((m.uploaded_at||'').slice(0,16));
+}
+
+/* 删除当前显示的 3D 图（工具栏「删除」按钮）。
+ * 删除后重建内联 3D 视图，避免「删掉了但画面还在渲染」的问题。 */
+function p3dDeleteCurrent(){
+  const sel=document.getElementById('p3dSel');
+  let id=(sel && sel.value && sel.value!=='—') ? sel.value : P3D.curId;
+  if(!id){ toast('当前没有可删除的 3D 图',true); return; }
+  const m=(P3D.list||[]).find(x=>String(x.id)===String(id))||{};
+  askConfirm('删除 3D 模型','确认删除「'+(m.original_name||('#'+id))+'」？原始文件与转换结果都会被移除。',()=>{
+    api('/api/models3d/'+id,{method:'DELETE'}).then(r=>{
+      if(r.error){ toast(r.error,true); return; }
+      toast('已删除');
+      if(SEL && SEL.partId) renderPart3D(SEL.partId, SEL.projId, P3D.canManage);
+    }).catch(e=>toast('删除失败：'+e.message,true));
+  },'删除','btn-danger');
+}
+
+function p3dUploadClick(){
+  if(!SEL.partId){ toast('请先选中一个零件',true); return; }
+  const inp=document.createElement('input'); inp.type='file';
+  inp.accept='.step,.stp,.iges,.igs,.stl,.brep,.brp';
+  inp.onchange=()=>p3dUpload(inp);
+  inp.click();
+}
+
+function p3dUpload(input){
+  const f=input.files && input.files[0];
+  input.value='';
+  if(!f) return;
+  const fd=new FormData();
+  fd.append('file',f);
+  fd.append('project_id',SEL.projId);
+  fd.append('part_id',SEL.partId);
+  fd.append('unit','mm');
+  toast('正在上传并转换 3D 模型，请稍候…');
+  fetch('/api/models3d/upload',{method:'POST',body:fd,credentials:'same-origin'})
+    .then(r=>r.json())
+    .then(r=>{
+      if(r.error){ toast(r.error,true); return; }
+      if(r.status==='ready') toast('3D 图上传并转换成功');
+      else toast('已保存，但转换失败：'+(r.error||'未知原因'),true);
+      renderPart3D(SEL.partId, SEL.projId, P3D.canManage);
+    })
+    .catch(e=>toast('上传失败：'+e.message,true));
+}
+
+/* ---------- 零件信息卡（概览图右侧，项目管理员可配置字段） ---------- */
+// 默认 8 字段（项目未自定义时回退）
+const DEFAULT_PART_INFO_FIELDS=[
+  {key:'no_',label:'NO.'},{key:'rev',label:'REV'},{key:'model',label:'模号'},
+  {key:'description',label:'Part description'},{key:'process',label:'制程'},
+  {key:'pd',label:'PD'},{key:'dqe',label:'DQE'},{key:'stamp_loc',label:'冲压地点'},
+];
+async function renderPartInfoPanel(ptid, pid, canAdmin){
+  const box=document.getElementById('partInfoPanel');
+  if(!box) return;
+  let fields=[], info={data:{},_canEdit:false};
+  try{
+    const [fRes,iRes]=await Promise.all([
+      api('/api/projects/'+pid+'/info_fields'),
+      api('/api/parts/'+ptid+'/info'),
+    ]);
+    fields=Array.isArray(fRes)?fRes:DEFAULT_PART_INFO_FIELDS;
+    info=iRes.error?{data:{},_canEdit:false,error:iRes.error}:iRes;
+  }catch(e){
+    box.innerHTML='<div class="pi-card"><div class="pi-body" style="color:var(--danger);font-size:12px">加载失败</div></div>';
+    return;
+  }
+  if(info.error){ box.innerHTML='<div class="pi-card"><div class="pi-body" style="color:var(--danger);font-size:12px">'+esc(info.error)+'</div></div>'; return; }
+  // 可编辑权以接口返回 _canEdit 为准（后端已按「项目内任一可编辑文件夹权限」放行 PD）；
+  // 「字段」配置按钮仍仅项目管理员可用，普通可编辑成员只显示「保存」
+  const editable=info._canEdit===true;
+  const showFields=!!canAdmin;
+  let h='<div class="pi-card">'
+    +'<div class="pi-head"><span>零件信息</span>'
+    +'<div class="pi-head-actions">'
+    +(editable
+      ? (showFields?'<button class="btn btn-sm" onclick="openPartInfoFieldsModal('+pid+','+ptid+')">字段</button>':'')
+        +'<button class="btn btn-sm btn-primary" id="piSaveBtn" onclick="savePartInfo('+ptid+','+pid+')">保存</button>'
+      : '<span class="pi-readonly">只读</span>')
+    +'</div></div><div class="pi-body">';
+  if(!fields.length){
+    h+='<div style="color:var(--t3);font-size:12px">暂无字段配置</div>';
+  }else{
+    for(const f of fields){
+      const v=(info.data&&info.data[f.key])||'';
+      h+='<div class="pi-row"><label>'+esc(f.label)+'</label>'
+        +(editable
+          ? '<textarea class="pi-input" data-field="'+escAttr(f.key)+'" rows="2" maxlength="500" placeholder="—">'+esc(v)+'</textarea>'
+          : '<div class="pi-val">'+esc(v).replace(/\n/g,'<br>')+'</div>')
+        +'</div>';
+    }
+  }
+  h+='</div>';
+  if(info.updated_at){
+    h+='<div class="pi-foot">最后更新：'+esc(String(info.updated_at).slice(0,16))+(info.updated_by?(' · '+esc(info.updated_by_name||info.updated_by)):'')+'</div>';
+  }
+  h+='</div>';
+  box.innerHTML=h;
+  bindPartInfoScrollHint();
+}
+async function savePartInfo(ptid,pid){
+  const box=document.getElementById('partInfoPanel');
+  if(!box) return;
+  const data={};
+  box.querySelectorAll('.pi-input').forEach(inp=>{ data[inp.dataset.field]=inp.value.trim(); });
+  const btn=document.getElementById('piSaveBtn');
+  if(btn){ btn.disabled=true; btn.textContent='保存中…'; }
+  const r=await api('/api/parts/'+ptid+'/info',{method:'PUT',body:{data}});
+  if(btn){ btn.disabled=false; btn.textContent='保存'; }
+  if(r.error){ toast(r.error,true); return; }
+  toast('零件信息已保存');
+  renderPartInfoPanel(ptid,pid,isProjAdmin(pid));
+}
+// 零件信息面板：检测内容溢出，切换上/下箭头提示（含滚动监听）
+function bindPartInfoScrollHint(){
+  const body=document.querySelector('#partInfoPanel .pi-body');
+  if(!body) return;
+  const update=()=>{
+    const overflow=body.scrollHeight-body.clientHeight>2;
+    body.classList.toggle('pi-not-top', overflow && body.scrollTop>2);
+    body.classList.toggle('pi-not-bottom', overflow && body.scrollTop+body.clientHeight<body.scrollHeight-2);
+  };
+  body.addEventListener('scroll',update,{passive:true});
+  update();
+  requestAnimationFrame(update);
+  setTimeout(update,80);
+}
+
+/* ---------- 字段配置弹窗 ---------- */
+function openPartInfoFieldsModal(pid,ptid){
+  CURRENT.partInfoFieldsPid=pid;
+  CURRENT.partInfoFieldsPtid=ptid;
+  api('/api/projects/'+pid+'/info_fields').then(fields=>{
+    CURRENT.partInfoFields=Array.isArray(fields)?fields.slice():DEFAULT_PART_INFO_FIELDS.slice();
+    renderPartInfoFieldsEditor();
+    openModal('partInfoFieldsMask');
+  }).catch(()=>toast('加载字段配置失败',true));
+}
+function renderPartInfoFieldsEditor(){
+  const box=document.getElementById('partInfoFieldsBody');
+  const list=CURRENT.partInfoFields||[];
+  let h='<div style="font-size:12px;color:var(--t2);margin-bottom:10px">项目管理员可新增、修改标签或删除字段；key 自动生成后不可改。</div>';
+  h+='<div id="partInfoFieldsList">';
+  list.forEach((f,idx)=>{
+    h+='<div class="pi-field-row" data-idx="'+idx+'">'
+      +'<input type="text" class="pi-input" value="'+escAttr(f.label)+'" onchange="updatePartInfoFieldLabel('+idx+',this.value)" placeholder="显示名称" title="显示名称">'
+      +'<span class="pi-field-key">'+esc(f.key)+'</span>'
+      +'<input type="number" class="pi-input sort" value="'+f.sort_order+'" onchange="updatePartInfoFieldSort('+idx+',this.value)" title="排序">'
+      +'<span class="pi-field-del" onclick="deletePartInfoField('+idx+')" title="删除">删除</span>'
+      +'</div>';
+  });
+  h+='</div>';
+  h+='<div class="pi-field-add">'
+    +'<input type="text" class="pi-input" id="newPartInfoFieldLabel" placeholder="新字段显示名称（如：表面处理）">'
+    +'<button class="btn btn-sm btn-primary" onclick="addPartInfoField()">+ 添加</button>'
+    +'</div>';
+  box.innerHTML=h;
+}
+function updatePartInfoFieldLabel(idx,label){
+  const list=CURRENT.partInfoFields;
+  if(list&&list[idx]) list[idx].label=label.trim();
+}
+function updatePartInfoFieldSort(idx,val){
+  const list=CURRENT.partInfoFields;
+  if(list&&list[idx]) list[idx].sort_order=parseInt(val,10)||0;
+}
+function deletePartInfoField(idx){
+  const list=CURRENT.partInfoFields;
+  if(!list) return;
+  list.splice(idx,1);
+  renderPartInfoFieldsEditor();
+}
+function keyFromLabel(label,existing){
+  let base=label.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g,'').replace(/[\u4e00-\u9fa5]/g,function(c){return c});
+  base=base.replace(/[^a-zA-Z0-9_]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'').toLowerCase();
+  if(!base) base='field';
+  let key=base, i=1;
+  while(existing.has(key)){ key=base+'_'+i; i++; }
+  return key;
+}
+function addPartInfoField(){
+  const input=document.getElementById('newPartInfoFieldLabel');
+  const label=(input.value||'').trim();
+  if(!label){ toast('请输入字段名称',true); return; }
+  const list=CURRENT.partInfoFields||[];
+  const existing=new Set(list.map(f=>f.key));
+  const key=keyFromLabel(label,existing);
+  list.push({key,label,sort_order:list.length});
+  input.value='';
+  renderPartInfoFieldsEditor();
+}
+async function savePartInfoFields(){
+  const pid=CURRENT.partInfoFieldsPid;
+  const ptid=CURRENT.partInfoFieldsPtid;
+  const list=CURRENT.partInfoFields||[];
+  // 按 sort_order 排序，确保提交顺序即展示顺序
+  const payload=list.slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)).map(f=>({key:f.key,label:f.label,sort_order:f.sort_order||0}));
+  const r=await api('/api/projects/'+pid+'/info_fields',{method:'PUT',body:payload});
+  if(r.error){ toast(r.error,true); return; }
+  toast('字段配置已保存');
+  closeModal('partInfoFieldsMask');
+  if(ptid) renderPartInfoPanel(ptid,pid,isProjAdmin(pid));
+}
+
+/* ---------- 右键菜单 ---------- */
+let CTX_TARGET=null;
+function showCtxMenu(e, el){
+  e.preventDefault(); e.stopPropagation();
+  const canAdmin=isProjAdmin(+el.dataset.pid);
+  if(!canAdmin) return;
+  selectNode(el);
+  CTX_TARGET=el;
+  const d=el.dataset;
+  const type=d.type;
+  let items='';
+  if(type==='project'){
+    items+='<div class="ctx-item" onclick="ctxAction(\'renameProject\')">✏️ 重命名项目</div>';
+    items+='<div class="ctx-item" onclick="ctxAction(\'createPartCtx\')">+ 新增零件</div>';
+    const isHidden = d.hidden==='1';
+    items+='<div class="ctx-item" onclick="ctxAction(\'toggleProjectHidden\')">'+(isHidden?'👁 显示项目':'🙈 隐藏项目')+'</div>';
+  } else if(type==='part'){
+    items+='<div class="ctx-item" onclick="ctxAction(\'renamePart\')">✏️ 重命名零件</div>';
+    items+='<div class="ctx-item" onclick="ctxAction(\'createPhaseCtx\')">+ 新增阶段</div>';
+  } else if(type==='phase'){
+    items+='<div class="ctx-item" onclick="ctxAction(\'renamePhase\')">✏️ 重命名阶段</div>';
+    items+='<div class="ctx-item" onclick="ctxAction(\'addDocType\')">📁 在该阶段下新增子文件夹</div>';
+  } else if(type==='doctype'){
+    // 所有子文件夹（标准模板 + 自定义）均允许重命名/删除
+    items+='<div class="ctx-item" onclick="ctxAction(\'renameDocType\')">✏️ 重命名文件夹</div>';
+    items+='<div class="ctx-item danger" onclick="ctxAction(\'delDocType\')">🗑️ 删除文件夹</div>';
+  }
+  if(!items){ hideCtxMenu(); return; }
+  const menu=document.getElementById('ctxMenu');
+  menu.innerHTML=items;
+  menu.style.left=Math.min(e.clientX, window.innerWidth-180)+'px';
+  menu.style.top=Math.min(e.clientY, window.innerHeight-160)+'px';
+  menu.classList.add('show');
+}
+function hideCtxMenu(){ document.getElementById('ctxMenu').classList.remove('show'); CTX_TARGET=null; }
+document.addEventListener('click', hideCtxMenu);
+document.addEventListener('contextmenu', e=>{
+  // 任何非树节点的右键先关闭菜单
+  if(!e.target.closest('.tn')) hideCtxMenu();
+});
+async function ctxAction(kind){
+  const el=CTX_TARGET;
+  hideCtxMenu();
+  if(!el) return;
+  const d=el.dataset;
+  if(kind==='renameProject'){
+    const newNo=await askPromptAsync('重命名项目','请输入新的项目编号：', d.name, '保存');
+    if(!newNo || newNo===d.name) return;
+    const r=await api('/api/projects/'+d.pid,{method:'PUT',body:{project_no:newNo}});
+    if(r.error){ toast(r.error,true); return; }
+    toast('已重命名'); loadTree();
+  } else if(kind==='renamePart'){
+    const newName=await askPromptAsync('重命名零件','请输入新的零件名称：', d.name, '保存');
+    if(!newName || newName===d.name) return;
+    const r=await api('/api/parts/'+d.ptid,{method:'PUT',body:{name:newName}});
+    if(r.error){ toast(r.error,true); return; }
+    toast('已重命名'); loadTree();
+  } else if(kind==='renamePhase'){
+    const newPh=await askPromptAsync('重命名阶段','请输入新的阶段名称：', d.name, '保存');
+    if(!newPh || newPh===d.name) return;
+    const r=await api('/api/parts/'+d.ptid+'/phases/'+encodeURIComponent(d.name),{method:'PUT',body:{phase:newPh}});
+    if(r.error){ toast(r.error,true); return; }
+    toast('已重命名'); loadTree();
+  } else if(kind==='toggleProjectHidden'){
+    const isHidden = d.hidden==='1';
+    const r=await api('/api/projects/'+d.pid+'/hide',{method:'POST'});
+    if(r.error){ toast(r.error,true); return; }
+    toast(isHidden?'项目已显示，普通用户可见':'项目已隐藏，普通用户不可见');
+    loadTree();
+  } else if(kind==='createPartCtx'){ createPart(); }
+  else if(kind==='createPhaseCtx'){ createPhase(); }
+  else if(kind==='addDocType'){
+    const dtName=await askPromptAsync('新增子文件夹','在「'+d.name+'」阶段下新增子文件夹：', '', '创建');
+    if(!dtName) return;
+    const r=await api('/api/custom-doc-types',{method:'POST',body:{project_id:+d.pid,part_id: +d.ptid, phase:d.name, doc_type:dtName}});
+    if(r.error){ toast(r.error,true); return; }
+    toast('子文件夹已创建'); loadTree();
+  } else if(kind==='renameDocType'){
+    const newName=await askPromptAsync('重命名子文件夹','请输入新的文件夹名称：', d.name, '保存');
+    if(!newName || newName===d.name) return;
+    const r=await api('/api/custom-doc-types/rename',{
+      method:'PUT',
+      body:{
+        project_id:+d.pid,
+        part_id:+d.ptid||null,
+        phase:d.phase,
+        old_doc_type:d.name,
+        new_doc_type:newName
+      }
+    });
+    if(r.error){ toast(r.error,true); return; }
+    toast('已重命名'); loadTree();
+  } else if(kind==='delDocType'){
+    askConfirm('删除文件夹','确认删除该文件夹？该文件夹下的所有文件将被永久删除，且无法恢复。', async ()=>{
+      const r=await api('/api/custom-doc-types/delete',{
+        method:'POST',
+        body:{
+          project_id:+d.pid,
+          part_id:+d.ptid||null,
+          phase:d.phase,
+          doc_type:d.name
+        }
+      });
+      if(r.error){ toast(r.error,true); return; }
+      toast('已删除'); loadTree();
+    },'删除','btn-danger');
+  }
+}
+
+/* ---------- 修改密码 ---------- */
+function showChangePw(){ openModal('pwMask'); }
+function enforceForceChange(){
+  // 初始密码未修改前，锁定界面仅允许改密
+  CURRENT.forceChange=true;
+  document.getElementById('loginWrap').style.display='none';
+  showChangePw();
+  toast('请先修改初始密码后再使用系统',true);
+}
+function submitChangePw(){
+  const old=document.getElementById('pwOld').value, nw=document.getElementById('pwNew').value;
+  api('/api/change-password',{method:'POST',body:{old,new:nw}}).then(r=>{
+    if(r.error) toast(r.error,true);
+    else {
+      toast('密码已修改');
+      closeModal('pwMask');
+      if(CURRENT.forceChange){ CURRENT.forceChange=false; location.reload(); }
+    }
+  });
+}
+
+let overlayZ = 200;
+function openModal(id){
+  const el = document.getElementById(id);
+  el.style.zIndex = ++overlayZ;
+  el.classList.add('show');
+}
+function closeModal(id){
+  // 强制修改初始密码期间，禁止关闭改密弹窗
+  if(id==='pwMask' && CURRENT.forceChange) return;
+  const el = document.getElementById(id);
+  el.classList.remove('show');
+  // leave z-index as-is; next open will bump it to top again
+}
+
+/* 启动：检查登录态，先显示加载层，避免登录页一闪而过 */
+const loadingEl = document.getElementById('appLoading');
+function hideLoading(){
+  if(!loadingEl) return;
+  loadingEl.style.opacity='0';
+  setTimeout(()=>{ loadingEl.style.display='none'; }, 220);
+}
+api('/api/me').then(me=>{
+  if(me && me.uid){
+    CURRENT.user=me;
+    if(me.must_change){ enforceForceChange(); }
+    else { initApp(me); }
+  }
+  else { document.getElementById('loginWrap').style.display='flex'; }
+  hideLoading();
+}).catch(()=>{
+  document.getElementById('loginWrap').style.display='flex';
+  hideLoading();
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Delete' && SEL.type && SEL.type!=='doctype'){
+    deleteSelectedNode();
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+build/
+dist/
+*.log
+npi.db
+npi_secret.key
+.npi_lock
+uploads/
+.env
+.DS_Store
+Thumbs.db
